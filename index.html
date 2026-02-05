@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Frota do Atlântico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+  --bg: #020617;
+  --card: #0b1220;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent2: #0ea5e9;
+  --border: #1e293b;
+  --danger: #f97373;
+  --success: #4ade80;
+}
+
+.light {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #0ea5e9;
+  --accent2: #38bdf8;
+  --border: #cbd5e1;
+  --danger: #ef4444;
+  --success: #16a34a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.app {
+  width: 100%;
+  max-width: 1200px;
+  background: rgba(15, 23, 42, 0.96);
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  overflow: hidden;
+  box-shadow:
+    0 24px 80px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(15,23,42,0.9);
+  backdrop-filter: blur(18px);
+}
+
+.light .app {
+  background: rgba(248, 250, 252, 0.98);
+  box-shadow:
+    0 18px 60px rgba(15,23,42,0.18),
+    0 0 0 1px rgba(148,163,184,0.35);
+}
+
+.app-inner {
+  padding: 22px 24px 26px;
+  transition: 0.4s ease;
+}
+
+/* TOPBAR */
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 10px;
+}
+
+#horaAtual {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+#toggleTheme {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: radial-gradient(circle at top left, var(--accent2), var(--accent));
+  color: #020617;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#userInfo {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(15,23,42,0.7);
+}
+
+.light #userInfo {
+  background: rgba(255,255,255,0.9);
+}
+
+#logoutBtn {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: none;
+}
+
+/* LOGIN */
+#loginScreen {
+  text-align: center;
+  padding: 60px 30px 40px;
+  animation: fadeInUp 0.8s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#loginScreen::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 20% 50%, rgba(56,189,248,0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(14,165,233,0.08) 0%, transparent 50%);
+  animation: gradientShift 8s ease infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes gradientShift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(20px, 30px) scale(1.1); }
+}
+
+#loginScreen > * {
+  position: relative;
+  z-index: 1;
+}
+
+#loginScreen img {
+  width: 180px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 15px 35px rgba(56,189,248,0.2));
+  animation: logoFloat 4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+  transition: filter 0.3s ease;
+}
+
+#loginScreen img:hover {
+  filter: drop-shadow(0 20px 45px rgba(56,189,248,0.4));
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-12px) scale(1.02); }
+}
+
+#loginScreen h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: slideInDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideInDown {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#loginScreen p.subtitle {
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 500;
+  animation: fadeInUp 0.8s ease 0.2s both;
+}
+
+.login-fields {
+  max-width: 380px;
+  margin: 36px auto 0;
+  text-align: left;
+  animation: fadeInUp 0.8s ease 0.3s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+label {
+  font-size: 13px;
+  margin-top: 16px;
+  display: block;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+label:first-of-type {
+  margin-top: 0;
+}
+
+input, select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: rgba(15,23,42,0.6);
+  color: var(--text);
+  font-size: 15px;
+  margin-top: 8px;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
+}
+
+input:hover, select:hover {
+  border-color: var(--accent);
+  background: rgba(15,23,42,0.8);
+  box-shadow: 0 4px 16px rgba(56,189,248,0.1);
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  background: rgba(15,23,42,0.95);
+  box-shadow: 0 0 0 2px rgba(56,189,248,0.2), inset 0 0 0 1px rgba(56,189,248,0.1);
+  transform: translateY(-2px);
+}
+
+.light input, .light select {
+  background: rgba(248, 250, 252, 0.7);
+}
+
+.light input:focus, .light select:focus {
+  background: rgba(248, 250, 252, 0.95);
+}
+
+/* Impressão digital */
+.fingerprint-wrapper {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  animation: fadeInUp 0.8s ease 0.4s both;
+}
+
+.fingerprint-ring {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(56,189,248,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(56,189,248,0.15), transparent 70%);
+  box-shadow: 0 0 0 0 rgba(56,189,248,0.3), inset 0 0 30px rgba(56,189,248,0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.fingerprint-ring::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(45deg, transparent 30%, rgba(56,189,248,0.1) 50%, transparent 70%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fingerprint-ring:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 30px rgba(56,189,248,0.3), 
+              0 0 40px rgba(56,189,248,0.2),
+              inset 0 0 30px rgba(56,189,248,0.15);
+}
+
+.fingerprint-ring:active {
+  transform: translateY(-6px) scale(0.95);
+  box-shadow: 0 12px 40px rgba(56,189,248,0.4), 
+              0 0 60px rgba(56,189,248,0.3),
+              inset 0 0 40px rgba(56,189,248,0.2);
+}
+
+.fingerprint-svg {
+  width: 65px;
+  height: 65px;
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 2.5;
+  opacity: 0.95;
+  position: relative;
+  z-index: 1;
+  animation: pulseFingerprint 2s ease-in-out infinite;
+}
+
+@keyframes pulseFingerprint {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.fingerprint-scan {
+  position: absolute;
+  width: 85px;
+  height: 85px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom,
+    rgba(56,189,248,0) 0%,
+    rgba(56,189,248,0.8) 50%,
+    rgba(56,189,248,0) 100%);
+  transform: translateY(-50px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  filter: blur(2px);
+}
+
+.fingerprint-ring.scanning .fingerprint-scan {
+  animation: scanFinger 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.fingerprint-ring.scanning {
+  box-shadow: 0 0 0 0 rgba(56,189,248,0.3), 
+              0 0 80px rgba(56,189,248,0.4),
+              inset 0 0 40px rgba(56,189,248,0.2);
+}
+
+@keyframes scanFinger {
+  0% { opacity: 0; transform: translateY(-40px); }
+  10% { opacity: 1; }
+  90% { opacity: 1; transform: translateY(40px); }
+  100% { opacity: 0; transform: translateY(40px); }
+}
+
+@keyframes loginSuccess {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+.fingerprint-text {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  animation: fadeInUp 0.8s ease 0.5s both;
+}
+
+/* TABS */
+.tabs {
+  display: none;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.tab {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(15,23,42,0.9);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #020617;
+}
+
+/* CONTENT */
+.content {
+  display: none;
+  background: var(--card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 20px 18px 18px;
+}
+
+.content.active {
+  display: block;
+}
+
+.content h2 {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+/* Options */
+.options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.option {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--muted);
+  background: rgba(15,23,42,0.9);
+  font-size: 13px;
+}
+
+.option.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #020617;
+}
+
+/* Result box */
+.result-box {
+  margin-top: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  background: radial-gradient(circle at top left, rgba(56,189,248,0.08), transparent 60%);
+}
+
+.result-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+/* Subtabs */
+.subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.subtab {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--muted);
+  background: rgba(15,23,42,0.9);
+  font-size: 13px;
+}
+
+.subtab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #020617;
+}
+
+.subcontent {
+  display: none;
+}
+
+.subcontent.active {
+  display: block;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+th {
+  background: rgba(15,23,42,0.9);
+  font-weight: 500;
+}
+
+.light th {
+  background: #e5e7eb;
+}
+
+/* Buttons */
+button {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #020617;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Notificações */
+#toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(15,23,42,0.98);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 45px rgba(0,0,0,0.6);
+  font-size: 13px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  z-index: 50;
+}
+
+#toast.success {
+  border-color: var(--success);
+}
+
+#toast.error {
+  border-color: var(--danger);
+}
+
+#toast-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--success);
+}
+
+#toast.error #toast-indicator {
+  background: var(--danger);
+}
+
+#toast-message {
+  flex: 1;
+}
+
+/* Logout animation */
+.logout-animation {
+  animation: logoutFade 0.6s ease forwards;
+}
+
+@keyframes logoutFade {
+  0% { opacity: 1; filter: blur(0px); transform: scale(1); }
+  50% { opacity: 0.4; filter: blur(3px); transform: scale(0.97); }
+  100% { opacity: 0; filter: blur(6px); transform: scale(0.94); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-inner">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button id="toggleTheme">🌙 / Claro</button>
+      </div>
+      <div id="horaAtual">00:00</div>
+      <div class="topbar-right">
+        <div id="userInfo"></div>
+        <button id="logoutBtn" onclick="logout()">Sair</button>
+      </div>
+    </div>
+
+    <div id="loginScreen">
+      <img src="logo-frota.png" alt="Frota do Atlântico">
+      <h1>Frota do Atlântico</h1>
+      <p class="subtitle">Navegamos com Confiança</p>
+
+      <div class="login-fields">
+        <label>Utilizador</label>
+        <input id="loginUser" placeholder="Nome de utilizador">
+
+        <label>PIN</label>
+        <input id="loginPass" type="password" placeholder="PIN">
+      </div>
+
+      <div class="fingerprint-wrapper" id="fingerprintWrapper">
+        <div class="fingerprint-ring">
+          <svg class="fingerprint-svg" viewBox="0 0 64 64">
+            <path d="M32 6c-8 0-14 6-14 14"></path>
+            <path d="M32 10c-6 0-10 4-10 10"></path>
+            <path d="M32 14c-4 0-6 2-6 6"></path>
+            <path d="M24 26c0 10 2 16 4 20"></path>
+            <path d="M32 22c0 10 2 18 4 22"></path>
+            <path d="M40 26c0 8-1 14-3 18"></path>
+            <path d="M20 24c0 12 2 20 5 26"></path>
+            <path d="M44 24c0 10-2 18-5 24"></path>
+          </svg>
+          <div class="fingerprint-scan"></div>
+        </div>
+        <p class="fingerprint-text">Toque para entrar</p>
+      </div>
+
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab" data-tab="calc">Calculadora</div>
+      <div class="tab" data-tab="vendas">Vendas</div>
+      <div class="tab" data-tab="compras">Compras</div>
+      <div class="tab" data-tab="admin">Administração</div>
+    </div>
+
+    <div id="calc" class="content">
+      <h2>Calculadora</h2>
+
+      <label>Quantidade (caixas)</label>
+      <input id="qty" type="number" min="0">
+
+      <label>Tipo de venda</label>
+      <div class="options" id="tipoVenda">
+        <div class="option active" data-type="sem">Sem parceria (36€)</div>
+        <div class="option" data-type="parceria">Com parceria (38€)</div>
+      </div>
+
+      <div class="result-box">
+        <div class="result-line">
+          <span>Preço unitário</span>
+          <span id="unit">36,00 €</span>
+        </div>
+        <div class="result-line">
+          <span>Total</span>
+          <span id="total">0,00 €</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="vendas" class="content">
+      <h2>Vendas</h2>
+
+      <label>Funcionário</label>
+      <select id="vendedor"></select>
+
+      <label>Cliente</label>
+      <input id="cliente">
+
+      <label>Quantidade</label>
+      <input id="qtdVenda" type="number" min="0">
+
+      <label>Preço por caixa (€)</label>
+      <input id="precoPraticado" type="number" min="0" step="0.01" placeholder="0.00">
+
+      <label>Valor (€)</label>
+      <input id="valorVenda" type="number" min="0" step="0.01" readonly>
+
+      <button id="guardarVendaBtn">Guardar Venda</button>
+    </div>
+
+    <div id="compras" class="content">
+      <h2>Compras</h2>
+
+      <label>Funcionário</label>
+      <select id="comprador"></select>
+
+      <label>Fornecedor</label>
+      <input id="fornecedor">
+
+      <label>Fornecedor é parceiro?</label>
+      <div class="options" id="parceriaCompra">
+        <div class="option active" data-parceria="nao">Não parceiro (36€)</div>
+        <div class="option" data-parceria="sim">Parceiro (38€)</div>
+      </div>
+
+      <label>Quantidade</label>
+      <input id="qtdCompra" type="number" min="0">
+
+      <label>Valor (€)</label>
+      <input id="valorCompra" type="number" readonly>
+
+      <button id="guardarCompraBtn">Guardar Compra</button>
+    </div>
+
+    <div id="admin" class="content">
+      <h2>Administração</h2>
+
+      <div id="adminArea" style="margin-top:10px;">
+
+        <div class="subtabs">
+          <div class="subtab active" data-sub="relatorios">Relatórios</div>
+          <div class="subtab" data-sub="caixa">Caixa</div>
+          <div class="subtab" data-sub="utilizadores">Utilizadores</div>
+        </div>
+
+        <div id="relatorios" class="subcontent active">
+          <h3>Registos de Vendas e Compras</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Funcionário</th>
+                <th>Entidade</th>
+                <th>Qtd</th>
+                <th>Valor (€)</th>
+                <th>Data</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaRegistos"></tbody>
+          </table>
+        </div>
+
+        <div id="caixa" class="subcontent">
+          <h3>Caixa da Empresa</h3>
+
+          <label>Valor total em caixa (€)</label>
+          <input id="valorCaixaTotal" type="number" min="0" step="0.01">
+
+          <button id="guardarCaixaBtn">Guardar valor total</button>
+
+          <h3 style="margin-top:20px;">Registar Movimento</h3>
+
+          <label>Responsável</label>
+          <select id="respCaixa"></select>
+
+          <label>Tipo de movimento</label>
+          <select id="tipoMovimento">
+            <option value="Depósito">Depósito</option>
+            <option value="Retirada">Retirada</option>
+          </select>
+
+          <label>Valor (€)</label>
+          <input id="valorMovimento" type="number" min="0" step="0.01">
+
+          <label>Motivo</label>
+          <input id="motivoMovimento">
+
+          <button id="registarMovimentoBtn">Guardar Movimento</button>
+
+          <h3 style="margin-top:20px;">Movimentos de Caixa</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Responsável</th>
+                <th>Tipo</th>
+                <th>Valor (€)</th>
+                <th>Motivo</th>
+                <th>Data</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaCaixa"></tbody>
+          </table>
+        </div>
+
+        <div id="utilizadores" class="subcontent">
+          <h3>Adicionar Utilizador</h3>
+
+          <label>Nome</label>
+          <input id="userNome">
+
+          <label>Email</label>
+          <input id="userEmail" type="email" placeholder="email@exemplo.com">
+
+          <label>Cargo</label>
+          <select id="userCargo">
+            <option value="funcionario">Funcionário</option>
+            <option value="gestor">Gestor</option>
+            <option value="direcao">Direção</option>
+          </select>
+
+          <label>Grupo</label>
+          <select id="userGrupo">
+            <option value="">(opcional)</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+          </select>
+
+          <label>PIN</label>
+          <input id="userPin" type="password">
+
+          <button id="addUserBtn">Adicionar Utilizador</button>
+          <button id="cancelarUserBtn" style="display:none;margin-left:8px;background:#f87171">Cancelar</button>
+
+          <h3 style="margin-top:20px;">Lista de Utilizadores</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Cargo</th>
+                <th>Grupo</th>
+                <th>PIN</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaUtilizadores"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast">
+  <div id="toast-indicator"></div>
+  <div id="toast-message"></div>
+</div>
+
+<script>
+/* HORA */
+function atualizarHora() {
+  const d = new Date();
+  document.getElementById("horaAtual").textContent =
+    d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+}
+setInterval(atualizarHora, 1000);
+atualizarHora();
+
+/* TEMA */
+const root = document.documentElement;
+const toggleBtn = document.getElementById("toggleTheme");
+const temaGuardado = localStorage.getItem("temaFrota") || "dark";
+
+if (temaGuardado === "light") root.classList.add("light");
+atualizarTextoTema();
+
+toggleBtn.addEventListener("click", () => {
+  root.classList.toggle("light");
+  localStorage.setItem("temaFrota", root.classList.contains("light") ? "light" : "dark");
+  atualizarTextoTema();
+});
+
+function atualizarTextoTema() {
+  toggleBtn.textContent = root.classList.contains("light") ? "🌙 / Escuro" : "🌕 / Claro";
+}
+
+/* NOTIFICAÇÕES */
+let toastTimeout;
+function showToast(msg, type = "success") {
+  console.log("Toast:", type, msg);
+  
+  const toast = document.getElementById("toast");
+  const msgEl = document.getElementById("toast-message");
+  const indicator = document.getElementById("toast-indicator");
+
+  if (!toast || !msgEl || !indicator) {
+    console.error("Elementos de toast não encontrados");
+    alert(msg); // Fallback
+    return;
+  }
+
+  toast.classList.remove("success", "error");
+  toast.classList.add(type);
+  msgEl.textContent = msg;
+  indicator.style.background = type === "success" ? "var(--success)" : "var(--danger)";
+
+  toast.style.display = "flex";
+  toast.style.opacity = "1";
+  toast.style.transform = "translateY(0)";
+
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    setTimeout(() => { toast.style.display = "none"; }, 250);
+  }, 2500);
+}
+
+/* UTILIZADORES */
+let editingUserIndex = null;
+
+let usuarios = JSON.parse(localStorage.getItem("usuariosFrota") || "[]");
+
+console.log("Utilizadores carregados do localStorage:", usuarios);
+
+if (usuarios.length === 0) {
+  console.log("Nenhum utilizador encontrado, criando admin padrão");
+  usuarios.push({
+    id: Date.now(),
+    nome: "admin",
+    cargo: "direcao",
+    grupo: "A",
+    pin: "1234"
+  });
+  localStorage.setItem("usuariosFrota", JSON.stringify(usuarios));
+  console.log("Admin criado e guardado no localStorage");
+}
+
+/* LOGIN + IMPRESSÃO DIGITAL */
+const fingerprintWrapper = document.getElementById("fingerprintWrapper");
+if (fingerprintWrapper) {
+  fingerprintWrapper.addEventListener("click", animarDigital);
+  console.log("Event listener de impressão digital adicionado");
+}
+
+function animarDigital() {
+  console.log("animarDigital() chamada");
+  const ring = document.querySelector("#loginScreen .fingerprint-ring");
+  if (!ring) {
+    console.error("Elemento fingerprint-ring não encontrado");
+    fazerLogin();
+    return;
+  }
+  
+  ring.classList.add("scanning");
+  
+  // Efeito visual adicional
+  const ringBefore = ring.style;
+  ringBefore.animation = "none";
+  
+  setTimeout(() => {
+    ring.classList.remove("scanning");
+    fazerLogin();
+  }, 1200);
+}
+
+
+function fazerLogin() {
+  console.log("fazerLogin() chamada");
+  console.log("Utilizadores carregados:", usuarios);
+  
+  const userInput = document.getElementById("loginUser");
+  const pinInput = document.getElementById("loginPass");
+  
+  if (!userInput || !pinInput) {
+    console.error("Elementos de input não encontrados");
+    showToast("Erro: campos de login não encontrados.", "error");
+    return;
+  }
+  
+  const username = userInput.value.trim().toLowerCase();
+  const pin = pinInput.value.trim();
+
+  console.log("Username:", username);
+  console.log("PIN:", pin);
+
+  if (!username || !pin) {
+    showToast("Preencha utilizador e PIN.", "error");
+    return;
+  }
+
+  console.log("Procurando utilizador...");
+  const encontrado = usuarios.find(u => {
+    console.log("Comparando:", u.nome.toLowerCase(), "===", username, "&&", u.pin, "===", pin);
+    return u.nome.toLowerCase() === username && u.pin === pin;
+  });
+
+  console.log("Utilizador encontrado:", encontrado);
+
+  if (!encontrado) {
+    showToast("Credenciais incorretas.", "error");
+    // Shake animation
+    const loginScreen = document.getElementById("loginScreen");
+    if (loginScreen) {
+      loginScreen.style.animation = "shake 0.5s ease";
+      setTimeout(() => { loginScreen.style.animation = ""; }, 500);
+    }
+    return;
+  }
+
+  console.log("Login bem-sucedido para:", encontrado.nome);
+  
+  // Animação de sucesso
+  const loginScreen = document.getElementById("loginScreen");
+  if (loginScreen) {
+    loginScreen.style.animation = "loginSuccess 0.6s ease forwards";
+  }
+  
+  setTimeout(() => {
+    localStorage.setItem("userAtual", JSON.stringify(encontrado));
+
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("tabs").style.display = "flex";
+
+    document.getElementById("userInfo").textContent = `${encontrado.nome} (${encontrado.cargo})`;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+
+    const adminTab = document.querySelector('.tab[data-tab="admin"]');
+    if (adminTab) {
+      if (encontrado.cargo !== "direcao" && encontrado.cargo !== "gestor") {
+        adminTab.style.display = "none";
+      } else {
+        adminTab.style.display = "inline-flex";
+      }
+    }
+
+    inicializarAppAposLogin();
+    abrirTab("calc");
+    showToast(`Bem-vindo, ${encontrado.nome}`, "success");
+  }, 300);
+}
+
+/* LOGOUT */
+function logout() {
+  document.querySelector(".app-inner").classList.add("logout-animation");
+  setTimeout(() => {
+    localStorage.removeItem("userAtual");
+    location.reload();
+  }, 600);
+}
+
+/* TABS */
+const tabElements = document.querySelectorAll(".tab");
+if (tabElements && tabElements.length > 0) {
+  tabElements.forEach(tab => {
+    tab.addEventListener("click", () => abrirTab(tab.dataset.tab));
+  });
+}
+
+function abrirTab(nome) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  const tab = document.querySelector(`.tab[data-tab="${nome}"]`);
+  if (tab) tab.classList.add("active");
+
+  document.querySelectorAll(".content").forEach(c => c.classList.remove("active"));
+  const cont = document.getElementById(nome);
+  if (cont) cont.classList.add("active");
+}
+
+/* SUBTABS */
+const subtabElements = document.querySelectorAll(".subtab");
+if (subtabElements && subtabElements.length > 0) {
+  subtabElements.forEach(sub => {
+    sub.addEventListener("click", () => abrirSub(sub.dataset.sub));
+  });
+}
+
+function abrirSub(nome) {
+  document.querySelectorAll(".subtab").forEach(s => s.classList.remove("active"));
+  const sub = document.querySelector(`.subtab[data-sub="${nome}"]`);
+  if (sub) sub.classList.add("active");
+
+  document.querySelectorAll(".subcontent").forEach(c => c.classList.remove("active"));
+  const cont = document.getElementById(nome);
+  if (cont) cont.classList.add("active");
+}
+
+/* CALCULADORA */
+const tipoVendaOptions = document.querySelectorAll("#tipoVenda .option");
+if (tipoVendaOptions && tipoVendaOptions.length > 0) {
+  tipoVendaOptions.forEach(opt => {
+    opt.addEventListener("click", () => {
+      document.querySelectorAll("#tipoVenda .option").forEach(o => o.classList.remove("active"));
+      opt.classList.add("active");
+      atualizarPrecoCalc();
+    });
+  });
+}
+
+const qtyInput = document.getElementById("qty");
+if (qtyInput) {
+  qtyInput.addEventListener("input", atualizarPrecoCalc);
+}
+
+function atualizarPrecoCalc() {
+  const qty = Number(document.getElementById("qty").value) || 0;
+  const tipoActive = document.querySelector("#tipoVenda .active");
+  const tipo = tipoActive ? tipoActive.dataset.type : "sem";
+  const preco = tipo === "sem" ? 36 : 38;
+
+  const unitEl = document.getElementById("unit");
+  const totalEl = document.getElementById("total");
+  if (unitEl) unitEl.textContent = preco.toFixed(2) + " €";
+  if (totalEl) totalEl.textContent = (qty * preco).toFixed(2) + " €";
+}
+
+/* LISTA DE FUNCIONÁRIOS (para selects) */
+function preencherSelectFuncionarios() {
+  const vendedores = document.getElementById("vendedor");
+  const compradores = document.getElementById("comprador");
+  const respCaixa = document.getElementById("respCaixa");
+
+  // Se os selects não existem ainda (durante login), ignorar
+  if (!vendedores || !compradores || !respCaixa) return;
+
+  vendedores.innerHTML = "";
+  compradores.innerHTML = "";
+  respCaixa.innerHTML = "";
+
+  const funcionarios = usuarios.filter(u => u.cargo !== "direcao");
+
+  funcionarios.forEach(u => {
+    const opt1 = document.createElement("option");
+    opt1.value = u.nome;
+    opt1.textContent = u.nome;
+    vendedores.appendChild(opt1);
+
+    const opt2 = document.createElement("option");
+    opt2.value = u.nome;
+    opt2.textContent = u.nome;
+    compradores.appendChild(opt2);
+
+    const opt3 = document.createElement("option");
+    opt3.value = u.nome;
+    opt3.textContent = u.nome;
+    respCaixa.appendChild(opt3);
+  });
+}
+
+/* VENDAS - valor automático */
+const qtdVendaInput = document.getElementById("qtdVenda");
+if (qtdVendaInput) {
+  qtdVendaInput.addEventListener("input", atualizarValorVenda);
+}
+
+const precoPraticadoInput = document.getElementById("precoPraticado");
+if (precoPraticadoInput) {
+  precoPraticadoInput.addEventListener("input", atualizarValorVenda);
+}
+
+function atualizarValorVenda() {
+  const qtdEl = document.getElementById("qtdVenda");
+  const precoEl = document.getElementById("precoPraticado");
+  const valorEl = document.getElementById("valorVenda");
+  
+  if (!qtdEl || !precoEl || !valorEl) return;
+  
+  const qtd = Number(qtdEl.value) || 0;
+  const preco = Number(precoEl.value) || 0;
+  const valor = qtd * preco;
+  valorEl.value = valor > 0 ? valor.toFixed(2) : "";
+}
+
+
+/* COMPRAS - valor automático */
+const parceriaCompraOptions = document.querySelectorAll("#parceriaCompra .option");
+if (parceriaCompraOptions && parceriaCompraOptions.length > 0) {
+  parceriaCompraOptions.forEach(opt => {
+    opt.addEventListener("click", () => {
+      document.querySelectorAll("#parceriaCompra .option").forEach(o => o.classList.remove("active"));
+      opt.classList.add("active");
+      atualizarValorCompra();
+    });
+  });
+}
+
+const qtdCompraInput = document.getElementById("qtdCompra");
+if (qtdCompraInput) {
+  qtdCompraInput.addEventListener("input", atualizarValorCompra);
+}
+
+function atualizarValorCompra() {
+  const qtdEl = document.getElementById("qtdCompra");
+  const valorEl = document.getElementById("valorCompra");
+  const parceriaActive = document.querySelector("#parceriaCompra .active");
+  
+  if (!qtdEl || !valorEl || !parceriaActive) return;
+  
+  const qtd = Number(qtdEl.value) || 0;
+  const parceria = parceriaActive.dataset.parceria;
+  const preco = parceria === "sim" ? 38 : 36;
+  const valor = qtd * preco;
+  valorEl.value = valor ? valor.toFixed(2) : "";
+}
+
+/* REGISTOS VENDAS/COMPRAS */
+let registos = JSON.parse(localStorage.getItem("registosFrota") || "[]");
+
+function registar(tipo) {
+  const data = new Date().toLocaleString("pt-PT");
+  let funcionario, entidade, qtd, valor;
+
+  if (tipo === "venda") {
+    funcionario = document.getElementById("vendedor").value;
+    entidade = document.getElementById("cliente").value;
+    qtd = Number(document.getElementById("qtdVenda").value);
+    valor = Number(document.getElementById("valorVenda").value);
+    if (!funcionario || !entidade || !qtd || !valor) {
+      showToast("Preencha todos os campos da venda.", "error");
+      return;
+    }
+  } else {
+    funcionario = document.getElementById("comprador").value;
+    entidade = document.getElementById("fornecedor").value;
+    qtd = Number(document.getElementById("qtdCompra").value);
+    if (!funcionario || !entidade || !qtd) {
+      showToast("Preencha todos os campos da compra.", "error");
+      return;
+    }
+    const parceria = document.querySelector("#parceriaCompra .active").dataset.parceria;
+    const preco = parceria === "sim" ? 38 : 36;
+    valor = qtd * preco;
+    document.getElementById("valorCompra").value = valor.toFixed(2);
+  }
+
+  registos.push({ tipo, funcionario, entidade, qtd, valor, data });
+  localStorage.setItem("registosFrota", JSON.stringify(registos));
+
+  atualizarTabelaRegistos();
+  
+  if (tipo === "venda") {
+    document.getElementById("vendedor").value = "";
+    document.getElementById("cliente").value = "";
+    document.getElementById("qtdVenda").value = "";
+    document.getElementById("precoPraticado").value = "";
+    document.getElementById("valorVenda").value = "";
+  } else {
+    document.getElementById("comprador").value = "";
+    document.getElementById("fornecedor").value = "";
+    document.getElementById("qtdCompra").value = "";
+    document.getElementById("valorCompra").value = "";
+  }
+  
+  showToast(`${tipo === "venda" ? "Venda" : "Compra"} registada com sucesso.`, "success");
+}
+
+
+    // garantir que os preços iniciais aparecem corretamente
+    if (typeof atualizarPrecoCalc === 'function') atualizarPrecoCalc();
+    if (typeof atualizarValorCompra === 'function') atualizarValorCompra();
+    if (typeof atualizarValorVenda === 'function') atualizarValorVenda();
+function atualizarTabelaRegistos() {
+  const tbody = document.getElementById("tabelaRegistos");
+  if (!tbody) return; // Elemento não existe ainda
+
+  tbody.innerHTML = "";
+
+  registos.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.tipo}</td>
+      <td>${r.funcionario}</td>
+      <td>${r.entidade}</td>
+      <td>${r.qtd}</td>
+      <td>${r.valor.toFixed(2)} €</td>
+      <td>${r.data}</td>
+      <td><button onclick="apagarRegisto(${i})">X</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function apagarRegisto(i) {
+  registos.splice(i, 1);
+  localStorage.setItem("registosFrota", JSON.stringify(registos));
+  atualizarTabelaRegistos();
+  showToast("Registo removido.", "success");
+}
+
+/* CAIXA */
+let caixa = JSON.parse(localStorage.getItem("caixaFrota") || "0");
+const valorCaixaInput = document.getElementById("valorCaixaTotal");
+if (valorCaixaInput) {
+  valorCaixaInput.value = caixa;
+}
+
+function guardarCaixaTotal() {
+  caixa = Number(document.getElementById("valorCaixaTotal").value);
+  if (isNaN(caixa)) {
+    showToast("Valor inválido para caixa.", "error");
+    return;
+  }
+  localStorage.setItem("caixaFrota", caixa);
+  showToast("Valor total de caixa guardado.", "success");
+}
+
+let movimentos = JSON.parse(localStorage.getItem("movimentosCaixa") || "[]");
+
+function registarMovimentoCaixa() {
+  const resp = document.getElementById("respCaixa").value;
+  const tipo = document.getElementById("tipoMovimento").value;
+  const valor = Number(document.getElementById("valorMovimento").value);
+  const motivo = document.getElementById("motivoMovimento").value;
+
+  if (!resp || !tipo || !valor || !motivo) {
+    showToast("Preencha todos os campos do movimento.", "error");
+    return;
+  }
+
+  const mov = {
+    resp,
+    tipo,
+    valor,
+    motivo,
+    data: new Date().toLocaleString("pt-PT")
+  };
+
+  movimentos.push(mov);
+  localStorage.setItem("movimentosCaixa", JSON.stringify(movimentos));
+
+  atualizarTabelaCaixa();
+  
+  document.getElementById("respCaixa").value = "";
+  document.getElementById("tipoMovimento").value = "Depósito";
+  document.getElementById("valorMovimento").value = "";
+  document.getElementById("motivoMovimento").value = "";
+  
+  showToast("Movimento de caixa registado.", "success");
+}
+
+function atualizarTabelaCaixa() {
+  const tbody = document.getElementById("tabelaCaixa");
+  if (!tbody) return; // Elemento não existe ainda
+
+  tbody.innerHTML = "";
+
+  movimentos.forEach((m, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${m.resp}</td>
+      <td>${m.tipo}</td>
+      <td>${m.valor.toFixed(2)} €</td>
+      <td>${m.motivo}</td>
+      <td>${m.data}</td>
+      <td><button onclick="apagarMovimento(${i})">X</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function apagarMovimento(i) {
+  movimentos.splice(i, 1);
+  localStorage.setItem("movimentosCaixa", JSON.stringify(movimentos));
+  atualizarTabelaCaixa();
+  showToast("Movimento removido.", "success");
+}
+
+/* UTILIZADORES */
+function adicionarUtilizador() {
+  const nome = document.getElementById("userNome").value.trim();
+  const email = document.getElementById("userEmail").value.trim();
+  const cargo = document.getElementById("userCargo").value;
+  const grupo = document.getElementById("userGrupo").value;
+  const pin = document.getElementById("userPin").value.trim();
+
+  if (!nome || !email || !cargo || !pin) {
+    showToast("Preencha todos os campos obrigatórios do utilizador.", "error");
+    return;
+  }
+
+  if (editingUserIndex !== null) {
+    // salvar alterações
+    usuarios[editingUserIndex] = { id: usuarios[editingUserIndex].id, nome, email, cargo, grupo, pin };
+    editingUserIndex = null;
+    document.getElementById("addUserBtn").textContent = "Adicionar Utilizador";
+    document.getElementById("cancelarUserBtn").style.display = "none";
+    showToast("Utilizador atualizado com sucesso.", "success");
+  } else {
+    usuarios.push({ id: Date.now(), nome, email, cargo, grupo, pin });
+    showToast("Utilizador adicionado com sucesso.", "success");
+  }
+
+  localStorage.setItem("usuariosFrota", JSON.stringify(usuarios));
+  sincronizarUtilizadoresServidor();
+
+  atualizarTabelaUtilizadores();
+  preencherSelectFuncionarios();
+  
+  // Limpar formulário
+  document.getElementById("userNome").value = "";
+  document.getElementById("userEmail").value = "";
+  document.getElementById("userCargo").value = "funcionario";
+  document.getElementById("userGrupo").value = "";
+  document.getElementById("userPin").value = "";
+}
+
+function editarUtilizador(i) {
+  const u = usuarios[i];
+  document.getElementById("userNome").value = u.nome;
+  document.getElementById("userEmail").value = u.email || "";
+  document.getElementById("userCargo").value = u.cargo;
+  document.getElementById("userGrupo").value = u.grupo || "";
+  document.getElementById("userPin").value = u.pin;
+  editingUserIndex = i;
+  document.getElementById("addUserBtn").textContent = "Salvar Alterações";
+  document.getElementById("cancelarUserBtn").style.display = "inline-block";
+}
+
+function cancelarEdicao() {
+  editingUserIndex = null;
+  document.getElementById("userNome").value = "";
+  document.getElementById("userEmail").value = "";
+  document.getElementById("userCargo").value = "funcionario";
+  document.getElementById("userGrupo").value = "";
+  document.getElementById("userPin").value = "";
+  document.getElementById("addUserBtn").textContent = "Adicionar Utilizador";
+  document.getElementById("cancelarUserBtn").style.display = "none";
+}
+
+/* RECUPERAÇÃO DE PIN */
+function abrirRecuperacao() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("recuperacaoScreen").style.display = "block";
+  document.getElementById("recoverNome").value = "";
+  document.getElementById("recoverEmail").value = "";
+  document.getElementById("mensagemRecovery").style.display = "none";
+}
+
+// Event listener para botão "Esqueceu PIN"
+const esqueceuBtn = document.getElementById("esqueceuBtn");
+if (esqueceuBtn) {
+  esqueceuBtn.addEventListener("click", abrirRecuperacao);
+  console.log("Event listener de recuperação adicionado");
+}
+
+// Event listeners de eventos de recuperação
+const voltarLoginBtn = document.getElementById("voltarLoginBtn");
+if (voltarLoginBtn) {
+  voltarLoginBtn.addEventListener("click", fecharRecuperacao);
+}
+
+const enviarRecoveryBtn = document.getElementById("enviarRecoveryBtn");
+if (enviarRecoveryBtn) {
+  enviarRecoveryBtn.addEventListener("click", enviarRecuperation);
+}
+
+// Event listeners de utilizadores
+const addUserBtn = document.getElementById("addUserBtn");
+if (addUserBtn) {
+  addUserBtn.addEventListener("click", adicionarUtilizador);
+}
+
+const cancelarUserBtn = document.getElementById("cancelarUserBtn");
+if (cancelarUserBtn) {
+  cancelarUserBtn.addEventListener("click", cancelarEdicao);
+}
+
+// Event listeners de caixa
+const guardarCaixaBtn = document.getElementById("guardarCaixaBtn");
+if (guardarCaixaBtn) {
+  guardarCaixaBtn.addEventListener("click", guardarCaixaTotal);
+}
+
+const registarMovimentoBtn = document.getElementById("registarMovimentoBtn");
+if (registarMovimentoBtn) {
+  registarMovimentoBtn.addEventListener("click", registarMovimentoCaixa);
+}
+
+// Event listeners de vendas e compras
+const guardarVendaBtn = document.getElementById("guardarVendaBtn");
+if (guardarVendaBtn) {
+  guardarVendaBtn.addEventListener("click", () => registar('venda'));
+}
+
+const guardarCompraBtn = document.getElementById("guardarCompraBtn");
+if (guardarCompraBtn) {
+  guardarCompraBtn.addEventListener("click", () => registar('compra'));
+}
+
+
+
+async function sincronizarUtilizadoresServidor() {
+  try {
+    await fetch("http://localhost:3001/sync-usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuarios })
+    });
+  } catch (err) {
+    // Silent fail - não interrompe a operação se servidor não está rodando
+  }
+}
+
+function atualizarTabelaUtilizadores() {
+  const tbody = document.getElementById("tabelaUtilizadores");
+  if (!tbody) return; // Elemento não existe ainda
+
+  tbody.innerHTML = "";
+
+  usuarios.forEach((u, i) => {
+    const tr = document.createElement("tr");
+    const maskedPin = u.pin ? '•'.repeat(u.pin.length) : '';
+    tr.innerHTML = `
+      <td>${u.nome}</td>
+      <td>${u.cargo}</td>
+      <td>${u.grupo || ''}</td>
+      <td>${maskedPin}</td>
+      <td><button onclick="editarUtilizador(${i})">Editar</button> <button onclick="apagarUtilizador(${i})">X</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function apagarUtilizador(i) {
+  usuarios.splice(i, 1);
+  localStorage.setItem("usuariosFrota", JSON.stringify(usuarios));
+  atualizarTabelaUtilizadores();
+  preencherSelectFuncionarios();
+  showToast("Utilizador removido.", "success");
+}
+
+
+/* INICIALIZAÇÃO */
+function inicializarAppAposLogin() {
+  // Recarregar dados do localStorage
+  registos = JSON.parse(localStorage.getItem("registosFrota") || "[]");
+  caixa = JSON.parse(localStorage.getItem("caixaFrota") || "0");
+  movimentos = JSON.parse(localStorage.getItem("movimentosCaixa") || "[]");
+  
+  // Atualizar campos
+  if (valorCaixaInput) valorCaixaInput.value = caixa;
+  
+  // Preencher tabelas
+  atualizarTabelaRegistos();
+  atualizarTabelaCaixa();
+  atualizarTabelaUtilizadores();
+  preencherSelectFuncionarios();
+}
+
+// Inicialização ao carregar página
+try {
+  atualizarTabelaRegistos();
+  atualizarTabelaCaixa();
+  atualizarTabelaUtilizadores();
+  preencherSelectFuncionarios();
+} catch (err) {
+  console.warn("Erro durante inicialização de tabelas:", err);
+}
+
+const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+if (userAtual) {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("tabs").style.display = "flex";
+  document.getElementById("userInfo").textContent = `${userAtual.nome} (${userAtual.cargo})`;
+  document.getElementById("logoutBtn").style.display = "inline-block";
+
+  const adminTab = document.querySelector('.tab[data-tab="admin"]');
+  if (adminTab) {
+    if (userAtual.cargo !== "direcao" && userAtual.cargo !== "gestor") {
+      adminTab.style.display = "none";
+    } else {
+      adminTab.style.display = "inline-flex";
+    }
+  }
+
+  inicializarAppAposLogin();
+  abrirTab("calc");
+}
+</script>
+</body>
+</html>
