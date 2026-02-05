@@ -17,3 +17,4 @@ Thumbs.db
 
 # Secrets - não commites chaves sensíveis aqui
 .env.*.local
+data/*.json
