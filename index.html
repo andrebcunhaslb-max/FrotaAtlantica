@@ -171,20 +171,62 @@ body {
 }
 
 #loginScreen img {
-  width: 180px;
+  width: 220px;
   margin-bottom: 16px;
-  filter: drop-shadow(0 15px 35px rgba(56,189,248,0.2));
-  animation: logoFloat 4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
-  transition: filter 0.3s ease;
+  border-radius: 50%;
+  clip-path: circle(45%);
+  filter: drop-shadow(0 0 20px rgba(56,189,248,0.4)) drop-shadow(0 10px 40px rgba(14,165,233,0.3));
+  animation: logoFloat 4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite, logoGlow 3s ease-in-out infinite;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  object-fit: cover;
 }
 
 #loginScreen img:hover {
-  filter: drop-shadow(0 20px 45px rgba(56,189,248,0.4));
+  filter: drop-shadow(0 0 30px rgba(56,189,248,0.6)) drop-shadow(0 15px 50px rgba(14,165,233,0.5));
+  transform: scale(1.1) rotate(-2deg);
+}
+
+.logo-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(14,165,233,0.08) 50%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: logoGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoGlowPulse {
+  0%, 100% { 
+    width: 280px;
+    height: 280px;
+    opacity: 0.5;
+  }
+  50% { 
+    width: 320px;
+    height: 320px;
+    opacity: 0.8;
+  }
 }
 
 @keyframes logoFloat {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-12px) scale(1.02); }
+  50% { transform: translateY(-18px) scale(1.05); }
+}
+
+@keyframes logoGlow {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(56,189,248,0.4)) drop-shadow(0 10px 40px rgba(14,165,233,0.3)); }
+  50% { filter: drop-shadow(0 0 35px rgba(56,189,248,0.6)) drop-shadow(0 15px 50px rgba(14,165,233,0.4)); }
 }
 
 #loginScreen h1 {
@@ -247,7 +289,7 @@ label:first-of-type {
   margin-top: 0;
 }
 
-input, select {
+input, select, textarea {
   width: 100%;
   padding: 14px 16px;
   border-radius: 14px;
@@ -261,24 +303,24 @@ input, select {
   backdrop-filter: blur(4px);
 }
 
-input:hover, select:hover {
+input:hover, select:hover, textarea:hover {
   border-color: var(--accent);
   background: rgba(15,23,42,0.8);
   box-shadow: 0 4px 16px rgba(56,189,248,0.1);
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
   background: rgba(15,23,42,0.95);
   box-shadow: 0 0 0 2px rgba(56,189,248,0.2), inset 0 0 0 1px rgba(56,189,248,0.1);
   transform: translateY(-2px);
 }
 
-.light input, .light select {
+.light input, .light select, .light textarea {
   background: rgba(248, 250, 252, 0.7);
 }
 
-.light input:focus, .light select:focus {
+.light input:focus, .light select:focus, .light textarea:focus {
   background: rgba(248, 250, 252, 0.95);
 }
 
@@ -628,7 +670,10 @@ button {
     </div>
 
     <div id="loginScreen">
-      <img src="logo-frota.png" alt="Frota do Atlântico">
+      <div class="logo-wrapper">
+        <div class="logo-glow"></div>
+        <img src="logo-frota.png" alt="Frota do Atlântico">
+      </div>
       <h1>Frota do Atlântico</h1>
       <p class="subtitle">Navegamos com Confiança</p>
 
@@ -661,8 +706,9 @@ button {
 
     <div class="tabs" id="tabs">
       <div class="tab" data-tab="calc">Calculadora</div>
-      <div class="tab" data-tab="vendas">Vendas</div>
-      <div class="tab" data-tab="compras">Compras</div>
+      <div class="tab" data-tab="vendas">Vendas a Empresas</div>
+      <div class="tab" data-tab="compras">Comprar Peixes</div>
+      <div class="tab" data-tab="farm">Farm</div>
       <div class="tab" data-tab="admin">Administração</div>
     </div>
 
@@ -743,6 +789,7 @@ button {
         <div class="subtabs">
           <div class="subtab active" data-sub="relatorios">Relatórios</div>
           <div class="subtab" data-sub="caixa">Caixa</div>
+          <div class="subtab" data-sub="apanhas">Apanhas de Peixe</div>
           <div class="subtab" data-sub="utilizadores">Utilizadores</div>
         </div>
 
@@ -813,12 +860,10 @@ button {
           <label>Nome</label>
           <input id="userNome">
 
-          <label>Email</label>
-          <input id="userEmail" type="email" placeholder="email@exemplo.com">
-
           <label>Cargo</label>
           <select id="userCargo">
             <option value="funcionario">Funcionário</option>
+            <option value="supervisor">Supervisor</option>
             <option value="gestor">Gestor</option>
             <option value="direcao">Direção</option>
           </select>
@@ -855,7 +900,60 @@ button {
           </table>
         </div>
 
+        <div id="apanhas" class="subcontent">
+          <h3>Apanhas de Peixe por Utilizador</h3>
+
+          <label>Filtrar por Utilizador</label>
+          <select id="filtroUtilizadorApanhas">
+            <option value="">Todos os utilizadores</option>
+          </select>
+
+          <h4 style="margin-top:12px;">Totais por Utilizador</h4>
+          <table style="margin-top:8px;">
+            <thead>
+              <tr>
+                <th>Utilizador</th>
+                <th>Total de Peixes</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaApanhasTotais"></tbody>
+          </table>
+
+          <h4 style="margin-top:18px;">Registos detalhados</h4>
+          <table style="margin-top:8px;">
+            <thead>
+              <tr>
+                <th>Utilizador</th>
+                <th>Quantidade</th>
+                <th>Data e Hora</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaApanhasAdmin"></tbody>
+          </table>
+        </div>
+
       </div>
+    </div>
+
+    <div id="farm" class="content">
+      <h2>Minhas Apanhas de Peixe</h2>
+
+      <label>Quantidade de Peixes</label>
+      <input id="farmQuantidade" type="number" min="0" placeholder="Ex: 5">
+
+      <button id="guardarFarmBtn" style="margin-top: 15px;">Registar Apanha</button>
+
+      <h3 style="margin-top:25px;">Minhas Apanhas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Quantidade</th>
+            <th>Data e Hora</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaFarm"></tbody>
+      </table>
     </div>
 
   </div>
@@ -866,6 +964,7 @@ button {
   <div id="toast-message"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
 <script>
 /* HORA */
 function atualizarHora() {
@@ -924,6 +1023,41 @@ function showToast(msg, type = "success") {
     toast.style.transform = "translateY(10px)";
     setTimeout(() => { toast.style.display = "none"; }, 250);
   }, 2500);
+}
+
+// --- Supabase setup (substitua pelos seus valores) ---
+const SUPABASE_URL = "https://fnxjluaxsdcttbwljbyy.supabase.co"; // Project URL fornecido
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZueGpsdWF4c2RjdHRid2xqYnl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzM4MjUsImV4cCI6MjA4NTg0OTgyNX0.W2Kwr73Y8ZjF73GVsCw8-2NqPHpvM5cuKdOlB-fmZms";
+let supa = null;
+if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('<')) {
+  try {
+    supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase initialized');
+  } catch (e) {
+    console.warn('Erro ao inicializar Supabase, fallback para localStorage', e);
+    supa = null;
+  }
+} else {
+  console.log('Supabase não configurado — a app irá usar localStorage como fallback.');
+}
+// Realtime: atualizar UI quando houver mudanças na tabela 'apanhas'
+if (supa && supa.channel) {
+  try {
+    const channel = supa.channel('public:apanhas');
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'apanhas' }, payload => {
+      console.log('Realtime apanhas payload', payload);
+      try { atualizarTabelaFarm(); } catch (e) {}
+      try { atualizarTabelaApanhasAdmin(); } catch (e) {}
+    });
+    channel.subscribe();
+  } catch (e) {
+    // algumas versões da lib usam .from(...).on(...).subscribe()
+    try {
+      supa.from('apanhas').on('INSERT', payload => { atualizarTabelaFarm(); atualizarTabelaApanhasAdmin(); }).on('DELETE', payload => { atualizarTabelaFarm(); atualizarTabelaApanhasAdmin(); }).subscribe();
+    } catch (err) {
+      console.warn('Não foi possível criar subscription Realtime:', err);
+    }
+  }
 }
 
 /* UTILIZADORES */
@@ -1037,7 +1171,7 @@ function fazerLogin() {
 
     const adminTab = document.querySelector('.tab[data-tab="admin"]');
     if (adminTab) {
-      if (encontrado.cargo !== "direcao" && encontrado.cargo !== "gestor") {
+      if (encontrado.cargo !== "direcao" && encontrado.cargo !== "gestor" && encontrado.cargo !== "supervisor") {
         adminTab.style.display = "none";
       } else {
         adminTab.style.display = "inline-flex";
@@ -1378,25 +1512,24 @@ function apagarMovimento(i) {
 /* UTILIZADORES */
 function adicionarUtilizador() {
   const nome = document.getElementById("userNome").value.trim();
-  const email = document.getElementById("userEmail").value.trim();
   const cargo = document.getElementById("userCargo").value;
   const grupo = document.getElementById("userGrupo").value;
   const pin = document.getElementById("userPin").value.trim();
 
-  if (!nome || !email || !cargo || !pin) {
+  if (!nome || !cargo || !pin) {
     showToast("Preencha todos os campos obrigatórios do utilizador.", "error");
     return;
   }
 
   if (editingUserIndex !== null) {
     // salvar alterações
-    usuarios[editingUserIndex] = { id: usuarios[editingUserIndex].id, nome, email, cargo, grupo, pin };
+    usuarios[editingUserIndex] = { id: usuarios[editingUserIndex].id, nome, cargo, grupo, pin };
     editingUserIndex = null;
     document.getElementById("addUserBtn").textContent = "Adicionar Utilizador";
     document.getElementById("cancelarUserBtn").style.display = "none";
     showToast("Utilizador atualizado com sucesso.", "success");
   } else {
-    usuarios.push({ id: Date.now(), nome, email, cargo, grupo, pin });
+    usuarios.push({ id: Date.now(), nome, cargo, grupo, pin });
     showToast("Utilizador adicionado com sucesso.", "success");
   }
 
@@ -1408,7 +1541,6 @@ function adicionarUtilizador() {
   
   // Limpar formulário
   document.getElementById("userNome").value = "";
-  document.getElementById("userEmail").value = "";
   document.getElementById("userCargo").value = "funcionario";
   document.getElementById("userGrupo").value = "";
   document.getElementById("userPin").value = "";
@@ -1417,7 +1549,6 @@ function adicionarUtilizador() {
 function editarUtilizador(i) {
   const u = usuarios[i];
   document.getElementById("userNome").value = u.nome;
-  document.getElementById("userEmail").value = u.email || "";
   document.getElementById("userCargo").value = u.cargo;
   document.getElementById("userGrupo").value = u.grupo || "";
   document.getElementById("userPin").value = u.pin;
@@ -1429,7 +1560,6 @@ function editarUtilizador(i) {
 function cancelarEdicao() {
   editingUserIndex = null;
   document.getElementById("userNome").value = "";
-  document.getElementById("userEmail").value = "";
   document.getElementById("userCargo").value = "funcionario";
   document.getElementById("userGrupo").value = "";
   document.getElementById("userPin").value = "";
@@ -1539,6 +1669,269 @@ function apagarUtilizador(i) {
   showToast("Utilizador removido.", "success");
 }
 
+/* FARM - Apanhas de Peixe */
+function obterChaveFarmUtilizador() {
+  const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+  if (!userAtual) return null;
+  return `farm_${userAtual.id}`;
+}
+
+async function carregarApanhasFarm() {
+  const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+  if (!userAtual) return [];
+
+  // Se Supabase estiver configurado, buscar do servidor
+  if (supa) {
+    try {
+      const { data, error } = await supa
+        .from('apanhas')
+        .select('*')
+        .eq('user_id', userAtual.id)
+        .order('datahora', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.warn('Erro ao carregar apanhas do Supabase, fallback para localStorage', err);
+    }
+  }
+
+  // Fallback local
+  const chave = obterChaveFarmUtilizador();
+  if (!chave) return [];
+  return JSON.parse(localStorage.getItem(chave) || "[]");
+}
+
+async function guardarApanhaFarm() {
+  const quantidade = document.getElementById("farmQuantidade").value.trim();
+  
+  if (!quantidade || Number(quantidade) <= 0) {
+    showToast("Informe uma quantidade de peixes válida.", "error");
+    return;
+  }
+
+  const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+  if (!userAtual) {
+    showToast("Erro: Utilizador não identificado.", "error");
+    return;
+  }
+
+  // Data/hora no formato ISO para o servidor
+  const agoraISO = new Date().toISOString();
+
+  if (supa) {
+    try {
+      const { error } = await supa.from('apanhas').insert([{ user_id: userAtual.id, quantidade: Number(quantidade), datahora: agoraISO }]);
+      if (error) throw error;
+    } catch (err) {
+      console.warn('Erro ao inserir apanha no Supabase, fallback para localStorage', err);
+      // fallback para localStorage
+      const chave = obterChaveFarmUtilizador();
+      const apanhas = JSON.parse(localStorage.getItem(chave) || '[]');
+      apanhas.push({ id: Date.now(), quantidade: Number(quantidade), dataHora: new Date().toLocaleString('pt-PT') });
+      localStorage.setItem(chave, JSON.stringify(apanhas));
+    }
+  } else {
+    const chave = obterChaveFarmUtilizador();
+    const apanhas = JSON.parse(localStorage.getItem(chave) || '[]');
+    apanhas.push({ id: Date.now(), quantidade: Number(quantidade), dataHora: new Date().toLocaleString('pt-PT') });
+    localStorage.setItem(chave, JSON.stringify(apanhas));
+  }
+
+  // Limpar formulário
+  document.getElementById("farmQuantidade").value = "";
+
+  atualizarTabelaFarm();
+  showToast("Apanha registada com sucesso!", "success");
+}
+
+async function atualizarTabelaFarm() {
+  const tbody = document.getElementById("tabelaFarm");
+  if (!tbody) return;
+
+  const apanhas = await carregarApanhasFarm();
+  tbody.innerHTML = "";
+
+  if (!apanhas || apanhas.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:var(--muted);'>Nenhuma apanha registada. Comece a registar!</td></tr>";
+    return;
+  }
+
+  // Mostrar em ordem (já ordenado pelo servidor se Supabase estiver ativo)
+  apanhas.forEach((a) => {
+    const dataHora = a.datahora ? new Date(a.datahora).toLocaleString('pt-PT') : (a.dataHora || '');
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${a.quantidade}</strong></td>
+      <td>${dataHora}</td>
+      <td><button onclick="apagarApanhaFarm(${a.id})" style="color: var(--danger);">X</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function apagarApanhaFarm(id) {
+  if (!confirm("Tem certeza que deseja apagar este registo?")) return;
+
+  if (supa) {
+    try {
+      const { error } = await supa.from('apanhas').delete().eq('id', id);
+      if (error) throw error;
+      showToast("Apanha removida.", "success");
+      atualizarTabelaFarm();
+      atualizarTabelaApanhasAdmin();
+      return;
+    } catch (err) {
+      console.warn('Erro ao apagar no Supabase, tentando fallback local', err);
+    }
+  }
+
+  const chave = obterChaveFarmUtilizador();
+  if (!chave) return;
+
+  const apanhas = JSON.parse(localStorage.getItem(chave) || '[]');
+  const index = apanhas.findIndex(a => a.id === id);
+  if (index > -1) {
+    apanhas.splice(index, 1);
+    localStorage.setItem(chave, JSON.stringify(apanhas));
+    atualizarTabelaFarm();
+    showToast("Apanha removida.", "success");
+  }
+}
+
+// Event listener para guardar apanha
+const guardarFarmBtn = document.getElementById("guardarFarmBtn");
+if (guardarFarmBtn) {
+  guardarFarmBtn.addEventListener("click", guardarApanhaFarm);
+}
+
+/* APANHAS NA ADMINISTRAÇÃO */
+function preencherFiltroUtilizadorApanhas() {
+  const select = document.getElementById("filtroUtilizadorApanhas");
+  if (!select) return;
+
+  const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+  if (!userAtual || (userAtual.cargo !== "direcao" && userAtual.cargo !== "gestor" && userAtual.cargo !== "supervisor")) return;
+
+  select.innerHTML = "<option value=''>Todos os utilizadores</option>";
+
+  let utilizadoresAMostrar = [];
+  
+  if (userAtual.cargo === "direcao" || userAtual.cargo === "gestor") {
+    // Gestor/Direção vê todos
+    utilizadoresAMostrar = usuarios.filter(u => u.cargo !== "direcao");
+  } else if (userAtual.cargo === "supervisor" && userAtual.grupo) {
+    // Supervisor vê apenas do seu grupo
+    utilizadoresAMostrar = usuarios.filter(u => u.grupo === userAtual.grupo && u.cargo !== "direcao");
+  }
+
+  utilizadoresAMostrar.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = u.nome;
+    select.appendChild(opt);
+  });
+
+  // Adicionar event listener para filtro
+  select.addEventListener("change", atualizarTabelaApanhasAdmin);
+}
+
+async function obterApanhasUtilizador(userId) {
+  if (supa) {
+    try {
+      const { data, error } = await supa.from('apanhas').select('*').eq('user_id', userId).order('datahora', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.warn('Erro ao obter apanhas do Supabase, fallback para localStorage', err);
+    }
+  }
+  const chave = `farm_${userId}`;
+  return JSON.parse(localStorage.getItem(chave) || "[]");
+}
+
+async function atualizarTabelaApanhasAdmin() {
+  const tbody = document.getElementById("tabelaApanhasAdmin");
+  const tbodyTotais = document.getElementById("tabelaApanhasTotais");
+  if (!tbody || !tbodyTotais) return;
+
+  const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+  if (!userAtual) return;
+
+  const filtroSelect = document.getElementById("filtroUtilizadorApanhas");
+  const filtroUserId = filtroSelect ? filtroSelect.value : "";
+
+  tbody.innerHTML = "";
+  tbodyTotais.innerHTML = "";
+
+  // Determinar quais utilizadores mostrar
+  let utilizadoresAMostrar = [];
+
+  if (userAtual.cargo === "direcao" || userAtual.cargo === "gestor") {
+    // Gestor/Direção vê todos
+    if (filtroUserId) {
+      utilizadoresAMostrar = usuarios.filter(u => u.id == filtroUserId);
+    } else {
+      utilizadoresAMostrar = usuarios.filter(u => u.cargo !== "direcao");
+    }
+  } else if (userAtual.cargo === "supervisor" && userAtual.grupo) {
+    // Supervisor vê apenas do seu grupo
+    if (filtroUserId) {
+      utilizadoresAMostrar = usuarios.filter(u => u.id == filtroUserId && u.grupo === userAtual.grupo);
+    } else {
+      utilizadoresAMostrar = usuarios.filter(u => u.grupo === userAtual.grupo && u.cargo !== "direcao");
+    }
+  } else {
+    return;
+  }
+
+  // Calcular totais por utilizador (assíncrono)
+  const totaisMap = {};
+  for (const util of utilizadoresAMostrar) {
+    const apanhas = await obterApanhasUtilizador(util.id) || [];
+    const total = apanhas.reduce((s, a) => s + (Number(a.quantidade) || 0), 0);
+    totaisMap[util.id] = { nome: util.nome, total };
+  }
+
+  // Renderizar tabela de totais (ordenada por total desc)
+  const listaTotais = Object.values(totaisMap).sort((a, b) => b.total - a.total);
+  if (listaTotais.length === 0) {
+    tbodyTotais.innerHTML = "<tr><td colspan='2' style='text-align:center; color:var(--muted);'>Nenhuma apanha registada.</td></tr>";
+  } else {
+    listaTotais.forEach(item => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${item.nome}</td><td><strong>${item.total}</strong></td>`;
+      tbodyTotais.appendChild(tr);
+    });
+  }
+
+  // Carregar e exibir registos detalhados (mais recentes primeiro)
+  let anyDetail = false;
+  for (const util of utilizadoresAMostrar) {
+    const apanhas = await obterApanhasUtilizador(util.id) || [];
+    apanhas.slice().reverse().forEach(apanha => {
+      anyDetail = true;
+      const dataHora = apanha.datahora ? new Date(apanha.datahora).toLocaleString('pt-PT') : (apanha.dataHora || '');
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${util.nome}</td>
+        <td><strong>${apanha.quantidade}</strong></td>
+        <td>${dataHora}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  if (!anyDetail) {
+    tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:var(--muted);'>Nenhuma apanha registada.</td></tr>";
+  } else {
+    // Adicionar linha de total geral no fim da tabela detalhada
+    const totalGeral = listaTotais.reduce((s, it) => s + (Number(it.total) || 0), 0);
+    const trTotal = document.createElement("tr");
+    trTotal.innerHTML = `<td style="font-weight:700">Total geral</td><td style="font-weight:700">${totalGeral}</td><td></td>`;
+    trTotal.style.borderTop = "2px solid var(--border)";
+    tbody.appendChild(trTotal);
+  }
+}
 
 /* INICIALIZAÇÃO */
 function inicializarAppAposLogin() {
@@ -1550,11 +1943,27 @@ function inicializarAppAposLogin() {
   // Atualizar campos
   if (valorCaixaInput) valorCaixaInput.value = caixa;
   
+  // Controlar visibilidade de subtabs
+  const userAtual = JSON.parse(localStorage.getItem("userAtual") || "null");
+  if (userAtual) {
+    const subtabApanhas = document.querySelector('.subtab[data-sub="apanhas"]');
+    if (subtabApanhas) {
+      if (userAtual.cargo === "direcao" || userAtual.cargo === "gestor" || userAtual.cargo === "supervisor") {
+        subtabApanhas.style.display = "inline-flex";
+      } else {
+        subtabApanhas.style.display = "none";
+      }
+    }
+  }
+  
   // Preencher tabelas
   atualizarTabelaRegistos();
   atualizarTabelaCaixa();
   atualizarTabelaUtilizadores();
   preencherSelectFuncionarios();
+  atualizarTabelaFarm();
+  preencherFiltroUtilizadorApanhas();
+  atualizarTabelaApanhasAdmin();
 }
 
 // Inicialização ao carregar página
@@ -1563,6 +1972,9 @@ try {
   atualizarTabelaCaixa();
   atualizarTabelaUtilizadores();
   preencherSelectFuncionarios();
+  atualizarTabelaFarm();
+  preencherFiltroUtilizadorApanhas();
+  atualizarTabelaApanhasAdmin();
 } catch (err) {
   console.warn("Erro durante inicialização de tabelas:", err);
 }
@@ -1576,7 +1988,7 @@ if (userAtual) {
 
   const adminTab = document.querySelector('.tab[data-tab="admin"]');
   if (adminTab) {
-    if (userAtual.cargo !== "direcao" && userAtual.cargo !== "gestor") {
+    if (userAtual.cargo !== "direcao" && userAtual.cargo !== "gestor" && userAtual.cargo !== "supervisor") {
       adminTab.style.display = "none";
     } else {
       adminTab.style.display = "inline-flex";
