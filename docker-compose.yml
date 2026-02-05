@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    ports:
+      - "2050:2050"
+    environment:
+      - PORT=2050
+    volumes:
+      - .:/app
+      # Mantém node_modules da imagem; evita sobrescrever com o do host e dispensa rebuild ao editar código
+      - /app/node_modules
+    restart: unless-stopped
