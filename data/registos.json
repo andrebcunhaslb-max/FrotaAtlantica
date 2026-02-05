@@ -1,0 +1,18 @@
+[
+  {
+    "tipo": "venda",
+    "funcionario": "Red",
+    "entidade": "abc",
+    "qtd": 450,
+    "valor": 202500,
+    "data": "05/02/2026, 22:19:30"
+  },
+  {
+    "tipo": "compra",
+    "funcionario": "Red",
+    "entidade": "pc",
+    "qtd": 1000,
+    "valor": 38000,
+    "data": "05/02/2026, 22:19:45"
+  }
+]

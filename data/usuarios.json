@@ -1,0 +1,25 @@
+[
+  {
+    "id": 1,
+    "nome": "admin",
+    "cargo": "direcao",
+    "grupo": "A",
+    "fivem_nick": "Mauricio",
+    "pin": "1234"
+  },
+  {
+    "id": 1770321033532,
+    "nome": "André Silva",
+    "cargo": "direcao",
+    "grupo": "",
+    "fivem_nick": "MonsterPT",
+    "pin": "1990"
+  },
+  {
+    "id": 1770329945649,
+    "nome": "Red",
+    "cargo": "funcionario",
+    "grupo": "",
+    "pin": "1111"
+  }
+]
