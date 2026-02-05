@@ -745,6 +745,21 @@ button {
 .fivem-badge.offline .fivem-badge-dot { background: var(--muted); }
 .fivem-badge.online.clickable { cursor: pointer; }
 
+#fivemTooltip {
+  position: fixed;
+  padding: 8px 12px;
+  background: rgba(15,23,42,0.98);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  font-size: 12px;
+  z-index: 101;
+  display: none;
+  pointer-events: none;
+}
+#fivemTooltip.visible { display: block; }
+.light #fivemTooltip { background: rgba(255,255,255,0.98); }
+
 #fivemPopover {
   position: fixed;
   padding: 12px 16px;
@@ -1130,6 +1145,8 @@ button {
   <div class="fivem-popover-tel"></div>
 </div>
 
+<div id="fivemTooltip">Online há: —</div>
+
 <script>
 /* HORA */
 function atualizarHora() {
@@ -1208,6 +1225,7 @@ async function apiPost(name, data) {
 
 /* FiveM – funcionários online */
 let fivemOnlineNicks = [];
+let fivemSessionStart = {};
 let fivemPollInterval = null;
 
 function stripFivemColors(s) {
@@ -1215,11 +1233,33 @@ function stripFivemColors(s) {
   return s.replace(/\^./g, '').replace(/~[^~]*~/g, '').trim();
 }
 
+function formatarDuracao(ms) {
+  if (ms < 60000) return "há " + Math.round(ms / 1000) + " s";
+  if (ms < 3600000) return "há " + Math.round(ms / 60000) + " min";
+  const h = Math.floor(ms / 3600000);
+  const m = Math.round((ms % 3600000) / 60000);
+  return m > 0 ? "há " + h + "h " + m + "m" : "há " + h + "h";
+}
+
 async function fetchFivemPlayers() {
   try {
     const data = await apiGet("fivem-players?code=875vq5");
     const rawNames = (data.players || []).map((p) => stripFivemColors(p.name) || (p.name || ''));
     fivemOnlineNicks = rawNames.map((n) => n.trim().toLowerCase()).filter(Boolean);
+    const withNick = usuarios.filter((u) => u.fivem_nick);
+    const now = Date.now();
+    withNick.forEach((u) => {
+      const nick = stripFivemColors(u.fivem_nick || "").trim().toLowerCase();
+      const online = nick && fivemOnlineNicks.some((n) => n === nick || (nick.length >= 3 && n.includes(nick)));
+      if (online) {
+        if (!fivemSessionStart[nick]) fivemSessionStart[nick] = now;
+      } else {
+        delete fivemSessionStart[nick];
+      }
+    });
+    Object.keys(fivemSessionStart).forEach((nick) => {
+      if (!fivemOnlineNicks.some((n) => n === nick || (nick.length >= 3 && n.includes(nick)))) delete fivemSessionStart[nick];
+    });
     renderFivemBadges();
   } catch (err) {
     console.warn("FiveM:", err.message);
@@ -1247,7 +1287,7 @@ function renderFivemBadges() {
       const nick = stripFivemColors(u.fivem_nick || "").trim().toLowerCase();
       const online = nick && fivemOnlineNicks.some((n) => n === nick || (nick.length >= 3 && n.includes(nick)));
       const clickable = online ? " clickable" : "";
-      const data = online ? ` data-nome="${(u.nome || "").replace(/"/g, "&quot;")}" data-tel="${(u.telemovel || "").replace(/"/g, "&quot;")}"` : "";
+      const data = online ? ` data-nome="${(u.nome || "").replace(/"/g, "&quot;")}" data-tel="${(u.telemovel || "").replace(/"/g, "&quot;")}" data-nick="${(nick || "").replace(/"/g, "&quot;")}"` : "";
       return `<span class="fivem-badge ${online ? "online" : "offline"}${clickable}"${data}><span class="fivem-badge-dot"></span>${u.nome}</span>`;
     })
     .join("");
@@ -1286,6 +1326,29 @@ document.addEventListener("click", (e) => {
     esconderFivemPopover();
   }
 });
+
+const fivemBadgesEl = document.querySelector(".fivem-badges");
+if (fivemBadgesEl) {
+  fivemBadgesEl.addEventListener("mouseover", (e) => {
+    const badge = e.target.closest(".fivem-badge.online");
+    if (!badge) return;
+    const nick = badge.dataset.nick;
+    if (!nick) return;
+    const start = fivemSessionStart[nick];
+    const tt = document.getElementById("fivemTooltip");
+    if (!tt) return;
+    tt.textContent = start ? "Online há: " + formatarDuracao(Date.now() - start) : "Online há: —";
+    const rect = badge.getBoundingClientRect();
+    tt.style.left = Math.max(8, rect.left - 140) + "px";
+    tt.style.top = rect.top + "px";
+    tt.classList.add("visible");
+  });
+  fivemBadgesEl.addEventListener("mouseout", (e) => {
+    if (!e.relatedTarget || !e.relatedTarget.closest(".fivem-badges")) {
+      document.getElementById("fivemTooltip")?.classList.remove("visible");
+    }
+  });
+}
 
 function iniciarFiveMPoll() {
   pararFiveMPoll();
