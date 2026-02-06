@@ -44,6 +44,7 @@ export function AppProvider({ children }) {
   const [chatMessages, setChatMessages] = useState([])
   const [chatEquipa, setChatEquipa] = useState([])
   const [comunicadosEquipa, setComunicadosEquipa] = useState([])
+  const [lastSeenComunicadoByGrupo, setLastSeenComunicadoByGrupo] = useState({})
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -141,6 +142,14 @@ export function AppProvider({ children }) {
     const interval = setInterval(tick, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [user?.id])
+
+  useEffect(() => {
+    const grupo = (user?.grupo || '').trim()
+    if (!grupo) return
+    loadComunicados(grupo)
+    const id = setInterval(() => loadComunicados(grupo), 8000)
+    return () => clearInterval(id)
+  }, [user?.grupo, loadComunicados])
 
   useEffect(() => {
     if (!user) {
@@ -304,6 +313,25 @@ export function AppProvider({ children }) {
     [user, loadComunicados, showToast]
   )
 
+  const markComunicadosAsSeen = useCallback((grupo, list) => {
+    if (!grupo) return
+    setLastSeenComunicadoByGrupo((prev) => {
+      const arr = Array.isArray(list) ? list : comunicadosEquipa
+      if (!arr.length) return { ...prev, [grupo]: Date.now() }
+      const latest = Math.max(...arr.map((m) => new Date(m.timestamp || 0).getTime()))
+      return { ...prev, [grupo]: latest }
+    })
+  }, [comunicadosEquipa])
+
+  const hasUnreadComunicados = useCallback(
+    (grupo) => {
+      if (!grupo || !Array.isArray(comunicadosEquipa) || comunicadosEquipa.length === 0) return false
+      const lastSeen = lastSeenComunicadoByGrupo[grupo] || 0
+      return comunicadosEquipa.some((m) => new Date(m.timestamp || 0).getTime() > lastSeen)
+    },
+    [comunicadosEquipa, lastSeenComunicadoByGrupo]
+  )
+
   const login = useCallback((u) => {
     setUser(u)
     try {
@@ -385,6 +413,8 @@ export function AppProvider({ children }) {
     sendChatEquipa,
     loadComunicados,
     sendComunicado,
+    markComunicadosAsSeen,
+    hasUnreadComunicados,
     loadData,
     saveUsuarios,
     saveRegistos,

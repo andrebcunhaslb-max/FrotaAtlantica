@@ -27,7 +27,7 @@ const itemClass = (isActive, isLight) =>
   }`
 
 export default function AppSidebar() {
-  const { user, activeTab, setActiveTab, logout, isLight, sidebarOpen, setSidebarOpen } = useApp()
+  const { user, activeTab, setActiveTab, logout, isLight, sidebarOpen, setSidebarOpen, hasUnreadComunicados } = useApp()
   const showAdmin =
     user?.cargo === 'direcao' || user?.cargo === 'gestor' || user?.cargo === 'supervisor'
 
@@ -60,15 +60,22 @@ export default function AppSidebar() {
       <nav className="flex flex-col gap-1 flex-1 min-h-0">
         {items.map(({ id, label, Icon }) => {
           const isActive = activeTab === id
+          const showComunicadoBadge = id === 'equipa' && userGrupo && hasUnreadComunicados?.(userGrupo)
           return (
             <button
               key={id}
               type="button"
               onClick={() => onSelect(id)}
-              className={itemClass(isActive, isLight)}
+              className={`${itemClass(isActive, isLight)} relative`}
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden />
               {label}
+              {showComunicadoBadge && (
+                <span
+                  className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber-500 animate-pulse"
+                  aria-label="Novo comunicado"
+                />
+              )}
             </button>
           )
         })}

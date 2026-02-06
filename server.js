@@ -499,6 +499,9 @@ app.post('/api/comunicados', async (req, res) => {
     if (!u || (u.grupo || '').trim() !== grupo) {
       return res.status(403).json({ error: 'Sem permissão para publicar comunicados nesta equipa' });
     }
+    if ((u.cargo || '').toLowerCase() !== 'supervisor') {
+      return res.status(403).json({ error: 'Apenas supervisores podem publicar comunicados' });
+    }
     const data = await readJson('comunicados');
     const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
     const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];

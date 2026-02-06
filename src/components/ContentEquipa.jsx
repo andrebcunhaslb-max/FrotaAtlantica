@@ -14,14 +14,18 @@ function formatChatTime(iso) {
 
 export default function ContentEquipa({ grupo }) {
   const {
+    user,
     chatEquipa,
     comunicadosEquipa,
     loadChatEquipa,
     sendChatEquipa,
     loadComunicados,
     sendComunicado,
+    markComunicadosAsSeen,
+    hasUnreadComunicados,
     isLight,
   } = useApp()
+  const canPublishComunicados = (user?.cargo || '').toLowerCase() === 'supervisor'
   const [subtab, setSubtab] = useState('chat')
   const [chatInput, setChatInput] = useState('')
   const [comInput, setComInput] = useState('')
@@ -35,6 +39,12 @@ export default function ContentEquipa({ grupo }) {
       loadComunicados(grupo)
     }
   }, [grupo, loadChatEquipa, loadComunicados])
+
+  useEffect(() => {
+    if (subtab === 'comunicados' && grupo) {
+      markComunicadosAsSeen(grupo, comunicadosEquipa)
+    }
+  }, [subtab, grupo, comunicadosEquipa, markComunicadosAsSeen])
 
   useEffect(() => {
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -98,11 +108,17 @@ export default function ContentEquipa({ grupo }) {
         </button>
         <button
           type="button"
-          onClick={() => setSubtab('comunicados')}
-          className={`pill flex items-center gap-2 ${subtab === 'comunicados' ? 'pill-active' : ''}`}
+          onClick={() => {
+            setSubtab('comunicados')
+            markComunicadosAsSeen(grupo, comunicadosEquipa)
+          }}
+          className={`pill flex items-center gap-2 relative ${subtab === 'comunicados' ? 'pill-active' : ''}`}
         >
           <Megaphone className="h-4 w-4" />
           Comunicados
+          {subtab !== 'comunicados' && hasUnreadComunicados(grupo) && (
+            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500" aria-label="Novo comunicado" />
+          )}
         </button>
       </div>
 
@@ -154,7 +170,7 @@ export default function ContentEquipa({ grupo }) {
           <div className="flex-1 overflow-y-auto px-5 space-y-3">
             {comunicadosEquipa.length === 0 && (
               <p className={`text-sm py-4 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
-                Ainda não há comunicados. Publica o primeiro.
+                {canPublishComunicados ? 'Ainda não há comunicados. Publica o primeiro.' : 'Ainda não há comunicados.'}
               </p>
             )}
             {comunicadosEquipa.map((msg) => (
@@ -169,22 +185,28 @@ export default function ContentEquipa({ grupo }) {
             ))}
             <div ref={listEndRef} />
           </div>
-          <form onSubmit={handleSubmitComunicado} className={`p-4 border-t flex gap-2 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
-            <input
-              type="text"
-              value={comInput}
-              onChange={(e) => setComInput(e.target.value)}
-              placeholder="Publicar comunicado..."
-              className="glass-input flex-1 min-w-0"
-              maxLength={2000}
-              disabled={sendingCom}
-              aria-label="Comunicado"
-            />
-            <button type="submit" disabled={sendingCom || !comInput.trim()} className="btn-primary inline-flex items-center gap-2 shrink-0" aria-label="Publicar">
-              <Megaphone className="h-4 w-4" />
-              Publicar
-            </button>
-          </form>
+          {canPublishComunicados ? (
+            <form onSubmit={handleSubmitComunicado} className={`p-4 border-t flex gap-2 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
+              <input
+                type="text"
+                value={comInput}
+                onChange={(e) => setComInput(e.target.value)}
+                placeholder="Publicar comunicado..."
+                className="glass-input flex-1 min-w-0"
+                maxLength={2000}
+                disabled={sendingCom}
+                aria-label="Comunicado"
+              />
+              <button type="submit" disabled={sendingCom || !comInput.trim()} className="btn-primary inline-flex items-center gap-2 shrink-0" aria-label="Publicar">
+                <Megaphone className="h-4 w-4" />
+                Publicar
+              </button>
+            </form>
+          ) : (
+            <p className={`p-4 border-t text-xs ${isLight ? 'border-slate-200 text-slate-600' : 'border-slate-600 text-slate-500'}`}>
+              Apenas supervisores podem publicar comunicados.
+            </p>
+          )}
         </>
       )}
     </div>

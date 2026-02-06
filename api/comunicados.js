@@ -36,6 +36,9 @@ module.exports = async function handler(req, res) {
       if (!u || (u.grupo || '').trim() !== g) {
         return res.status(403).json({ error: 'Sem permissão para publicar comunicados nesta equipa' });
       }
+      if ((u.cargo || '').toLowerCase() !== 'supervisor') {
+        return res.status(403).json({ error: 'Apenas supervisores podem publicar comunicados' });
+      }
 
       const msg = {
         id: Date.now() + Math.random(),
