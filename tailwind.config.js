@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+// Breakpoints (mobile-first): sm 640px, md 768px, lg 1024px, xl 1280px, 2xl 1536px
 export default {
   content: [
     "./index.html",
@@ -7,6 +8,8 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      minHeight: { touch: '44px' },
+      minWidth: { touch: '44px' },
       colors: {
         bg: '#020617',
         card: '#0b1220',

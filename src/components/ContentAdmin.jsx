@@ -402,12 +402,12 @@ export default function ContentAdmin() {
     return result.sort((a, b) => b.total - a.total)
   }, [usuarios, apanhas, filtroUtilizadorApanhas, filtroDataInicioApanhas, filtroDataFimApanhas])
 
-  const tableClass = 'w-full text-sm border-collapse'
+  const tableClass = 'w-full text-sm border-collapse min-w-[600px]'
   const thClass = isLight
     ? 'border border-slate-300 bg-slate-100 px-2 py-1.5 text-left font-medium text-slate-700'
     : 'border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium'
   const tdClass = isLight ? 'border border-slate-200 px-2 py-1.5 text-slate-700' : 'border border-slate-600 px-2 py-1.5'
-  const wrapperClass = isLight ? 'rounded-xl border border-slate-300 bg-slate-50 overflow-x-auto' : 'rounded-xl border border-slate-600 overflow-x-auto'
+  const wrapperClass = isLight ? 'rounded-xl border border-slate-300 bg-slate-50 overflow-x-touch' : 'rounded-xl border border-slate-600 overflow-x-touch'
   const filterWrapperClass = isLight ? 'flex flex-wrap items-center gap-4 mb-4 p-3 rounded-xl border border-slate-300 bg-slate-50' : 'flex flex-wrap items-center gap-4 mb-4 p-3 rounded-xl border border-slate-600 bg-slate-800/50'
   const labelClass = isLight ? 'text-xs uppercase tracking-wider text-slate-600' : 'text-xs uppercase tracking-wider text-slate-500'
   const labelBlockClass = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600' : 'block text-xs font-medium uppercase tracking-wider text-slate-500'
@@ -433,7 +433,7 @@ export default function ContentAdmin() {
         Atualizar dados
       </button>
 
-      <div className={`flex flex-wrap border-b mb-4 -mx-1 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
+      <div className={`flex flex-wrap border-b mb-4 -mx-1 gap-1 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
         {SUBTABS.map(({ id, label }) => {
           const active = activeSubtab === id
           return (
@@ -441,7 +441,7 @@ export default function ContentAdmin() {
               key={id}
               type="button"
               onClick={() => setActiveSubtab(id)}
-              className={`px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px rounded-t-lg ${
+              className={`min-h-[44px] px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px rounded-t-lg ${
                 active
                   ? isLight
                     ? 'border-sky-500 text-sky-600 bg-sky-50/50'
@@ -499,46 +499,91 @@ export default function ContentAdmin() {
               className="glass-input w-auto min-w-[120px] py-2"
             />
           </div>
-          <div className={wrapperClass}>
-            <table className={tableClass}>
-              <thead>
-                <tr>
-                  <th className={thClass}>Tipo</th>
-                  <th className={thClass}>Funcionário</th>
-                  <th className={thClass}>Entidade</th>
-                  <th className={thClass}>Qtd</th>
-                  <th className={thClass}>Valor (€)</th>
-                  <th className={thClass}>Data</th>
-                  <th className={thClass}>Ação</th>
-                </tr>
-              </thead>
-              <tbody>
+          {registosFiltrados.length === 0 ? (
+            <p className={mutedTextClass}>Nenhum registo encontrado.</p>
+          ) : (
+            <>
+              <div className="md:hidden space-y-3">
                 {registosFiltrados.map((r, i) => {
                   const origIndex = registos.indexOf(r)
                   return (
-                    <tr key={origIndex}>
-                      <td className={tdClass}>{r.tipo}</td>
-                      <td className={tdClass}>{r.funcionario}</td>
-                      <td className={tdClass}>{r.entidade}</td>
-                      <td className={tdClass}>{r.qtd}</td>
-                      <td className={tdClass}>{Number(r.valor).toFixed(2)} €</td>
-                      <td className={tdClass}>{r.data}</td>
-                      <td className={tdClass}>
+                    <div
+                      key={origIndex}
+                      className={`rounded-xl border p-4 space-y-2 ${
+                        isLight ? 'border-slate-300 bg-slate-50' : 'border-slate-600 bg-slate-800/50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <span className={isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}>{r.tipo}</span>
+                        <span className={isLight ? 'text-slate-800 font-semibold' : 'text-slate-200'}>{Number(r.valor).toFixed(2)} €</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <span className={labelClass}>Funcionário</span>
+                        <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>{r.funcionario}</span>
+                        <span className={labelClass}>Entidade</span>
+                        <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>{r.entidade}</span>
+                        <span className={labelClass}>Qtd</span>
+                        <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>{r.qtd}</span>
+                        <span className={labelClass}>Data</span>
+                        <span className={isLight ? 'text-slate-700' : 'text-slate-300'}>{r.data}</span>
+                      </div>
+                      <div className="pt-2">
                         <button
                           type="button"
                           onClick={() => handleApagarRegisto(i)}
-                          className={btnDeleteClass}
+                          className={`min-h-[44px] px-3 rounded-lg text-sm font-medium ${btnDeleteClass}`}
                           aria-label="Apagar"
                         >
-                          <Trash2 className="h-4 w-4 inline" />
+                          <Trash2 className="h-4 w-4 inline mr-1" />
+                          Apagar
                         </button>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
+              </div>
+              <div className={`hidden md:block ${wrapperClass}`}>
+                <table className={tableClass}>
+                  <thead>
+                    <tr>
+                      <th className={thClass}>Tipo</th>
+                      <th className={thClass}>Funcionário</th>
+                      <th className={thClass}>Entidade</th>
+                      <th className={thClass}>Qtd</th>
+                      <th className={thClass}>Valor (€)</th>
+                      <th className={thClass}>Data</th>
+                      <th className={thClass}>Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {registosFiltrados.map((r, i) => {
+                      const origIndex = registos.indexOf(r)
+                      return (
+                        <tr key={origIndex}>
+                          <td className={tdClass}>{r.tipo}</td>
+                          <td className={tdClass}>{r.funcionario}</td>
+                          <td className={tdClass}>{r.entidade}</td>
+                          <td className={tdClass}>{r.qtd}</td>
+                          <td className={tdClass}>{Number(r.valor).toFixed(2)} €</td>
+                          <td className={tdClass}>{r.data}</td>
+                          <td className={tdClass}>
+                            <button
+                              type="button"
+                              onClick={() => handleApagarRegisto(i)}
+                              className={`${btnDeleteClass} min-h-[44px] inline-flex items-center`}
+                              aria-label="Apagar"
+                            >
+                              <Trash2 className="h-4 w-4 inline" />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </>
       )}
 

@@ -15,6 +15,9 @@ Thumbs.db
 .vscode/
 *.log
 
+# Skills (Cursor / agentes)
+.agents/
+
 # Secrets - não commites chaves sensíveis aqui
 .env.*.local
 data/*.json
