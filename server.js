@@ -90,6 +90,85 @@ app.get('/api/apanhas', async (req, res) => {
   }
 });
 
+app.get('/api/metas', async (req, res) => {
+  try {
+    const data = await readJson('metas');
+    res.json(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler metas' });
+  }
+});
+
+app.get('/api/valor-receber', async (req, res) => {
+  try {
+    const data = await readJson('valorReceber');
+    res.json(data && typeof data === 'object' && !Array.isArray(data) ? data : {});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler valor a receber' });
+  }
+});
+
+const PRECO_PEIXE_DEFAULT = { sem: 36, parceria: 38 };
+app.get('/api/preco-peixe', async (req, res) => {
+  try {
+    const data = await readJson('precoPeixe');
+    const sem = typeof data?.sem === 'number' ? data.sem : PRECO_PEIXE_DEFAULT.sem;
+    const parceria = typeof data?.parceria === 'number' ? data.parceria : PRECO_PEIXE_DEFAULT.parceria;
+    res.json({ sem, parceria });
+  } catch (err) {
+    console.error(err);
+    res.json(PRECO_PEIXE_DEFAULT);
+  }
+});
+
+app.post('/api/preco-peixe', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body !== 'object') {
+      return res.status(400).json({ error: 'Corpo deve ser um objeto { sem, parceria }' });
+    }
+    const sem = typeof body.sem === 'number' ? body.sem : Number(body.sem);
+    const parceria = typeof body.parceria === 'number' ? body.parceria : Number(body.parceria);
+    if (Number.isNaN(sem) || Number.isNaN(parceria) || sem < 0 || parceria < 0) {
+      return res.status(400).json({ error: 'sem e parceria devem ser números não negativos' });
+    }
+    await writeJson('precoPeixe', { sem, parceria });
+    res.json({ ok: true, sem, parceria });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar preços do peixe' });
+  }
+});
+
+app.get('/api/ciclo-pagamento', async (req, res) => {
+  try {
+    let data = await readJson('cicloPagamento');
+    if (!data || typeof data.cicloInicio !== 'string') {
+      const cicloInicio = new Date().toISOString();
+      await writeJson('cicloPagamento', { cicloInicio });
+      return res.json({ cicloInicio });
+    }
+    res.json({ cicloInicio: data.cicloInicio });
+  } catch (err) {
+    console.error(err);
+    res.json({ cicloInicio: new Date().toISOString() });
+  }
+});
+
+app.post('/api/ciclo-pagamento/pagar', async (req, res) => {
+  try {
+    const cicloInicio = new Date().toISOString();
+    await writeJson('cicloPagamento', { cicloInicio });
+    await writeJson('metas', []);
+    res.json({ ok: true, cicloInicio });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao marcar pagamento' });
+  }
+});
+
 const CHAT_MAX = 200;
 app.get('/api/chat', async (req, res) => {
   try {
@@ -193,13 +272,98 @@ app.post('/api/apanhas', async (req, res) => {
     const out = body.map((item) => ({
       ...item,
       id: item.id ?? Date.now() + Math.random(),
-      datahora: item.datahora ?? now
+      datahora: item.datahora ?? now,
+      tipo: item.tipo === 'parceria' ? 'parceria' : 'sem'
     }));
     await writeJson('apanhas', out);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao guardar apanhas' });
+  }
+});
+
+app.post('/api/metas', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!Array.isArray(body)) {
+      return res.status(400).json({ error: 'Corpo deve ser um array' });
+    }
+    await writeJson('metas', body);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar metas' });
+  }
+});
+
+app.post('/api/valor-receber', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body !== 'object' || Array.isArray(body)) {
+      return res.status(400).json({ error: 'Corpo deve ser um objeto { userId: valor }' });
+    }
+    await writeJson('valorReceber', body);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar valor a receber' });
+  }
+});
+
+function getCurrentWeekKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+app.get('/api/tempo-online', async (req, res) => {
+  try {
+    const currentWeek = getCurrentWeekKey();
+    const data = await readJson('tempoOnline');
+    const weekKey = data && data.weekKey;
+    const minutesByUser = data && data.minutesByUser && typeof data.minutesByUser === 'object' ? data.minutesByUser : {};
+    if (weekKey !== currentWeek) {
+      return res.json({ users: [] });
+    }
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    const registeredIds = new Set(usuariosList.map((u) => String(u.id)));
+    const nameById = {};
+    usuariosList.forEach((u) => { nameById[String(u.id)] = u.nome || '—'; });
+    const users = Object.entries(minutesByUser)
+      .filter(([userId]) => registeredIds.has(userId))
+      .filter(([, min]) => Number(min) > 0)
+      .map(([userId, minutes]) => ({ userId, nome: nameById[userId] || userId, minutes: Number(minutes) }))
+      .sort((a, b) => b.minutes - a.minutes);
+    res.json({ users });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler tempo online' });
+  }
+});
+
+app.post('/api/tempo-online', async (req, res) => {
+  try {
+    const body = req.body;
+    const userId = body != null && body.userId != null ? String(body.userId) : null;
+    const minutesToAdd = body != null && typeof body.minutes === 'number' ? body.minutes : 5;
+    if (!userId) {
+      return res.status(400).json({ error: 'Corpo deve ter userId' });
+    }
+    const currentWeek = getCurrentWeekKey();
+    let data = await readJson('tempoOnline');
+    if (!data || data.weekKey !== currentWeek) {
+      data = { weekKey: currentWeek, minutesByUser: {} };
+    }
+    if (typeof data.minutesByUser !== 'object') data.minutesByUser = {};
+    const prev = Number(data.minutesByUser[userId]) || 0;
+    data.minutesByUser[userId] = prev + minutesToAdd;
+    await writeJson('tempoOnline', data);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar tempo online' });
   }
 });
 

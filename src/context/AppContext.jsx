@@ -26,7 +26,7 @@ export function AppProvider({ children }) {
     }
   })
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' })
-  const [activeTab, setActiveTab] = useState('calc')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [activeSubtab, setActiveSubtab] = useState('relatorios')
   const [authView, setAuthView] = useState('login') // 'login' | 'recovery'
   const [usuarios, setUsuarios] = useState([])
@@ -34,6 +34,11 @@ export function AppProvider({ children }) {
   const [caixa, setCaixa] = useState(0)
   const [movimentos, setMovimentos] = useState([])
   const [apanhas, setApanhas] = useState([])
+  const [metas, setMetas] = useState([])
+  const [valorReceber, setValorReceber] = useState({})
+  const [precoPeixe, setPrecoPeixe] = useState({ sem: 36, parceria: 38 })
+  const [cicloInicio, setCicloInicio] = useState(null)
+  const [tempoOnlineRank, setTempoOnlineRank] = useState([])
   const [chatMessages, setChatMessages] = useState([])
 
   useEffect(() => {
@@ -50,27 +55,64 @@ export function AppProvider({ children }) {
   const loadData = useCallback(async () => {
     if (!user) return
     try {
-      const [u, r, cData, m, a] = await Promise.all([
+      const [u, r, cData, m, a, metasData, vrData, ppData, cicloData, toData] = await Promise.all([
         apiGet('usuarios').catch(() => []),
         apiGet('registos').catch(() => []),
         apiGet('caixa').catch(() => ({ valorTotal: 0 })),
         apiGet('movimentos').catch(() => []),
         apiGet('apanhas').catch(() => []),
+        apiGet('metas').catch(() => []),
+        apiGet('valor-receber').catch(() => ({})),
+        apiGet('preco-peixe').catch(() => ({ sem: 36, parceria: 38 })),
+        apiGet('ciclo-pagamento').catch(() => ({ cicloInicio: new Date().toISOString() })),
+        apiGet('tempo-online').catch(() => ({ users: [] })),
       ])
       setUsuarios(Array.isArray(u) ? u : [])
       setRegistos(Array.isArray(r) ? r : [])
       setCaixa(cData?.valorTotal ?? 0)
       setMovimentos(Array.isArray(m) ? m : [])
       setApanhas(Array.isArray(a) ? a : [])
+      setMetas(Array.isArray(metasData) ? metasData : [])
+      setValorReceber(vrData && typeof vrData === 'object' && !Array.isArray(vrData) ? vrData : {})
+      setPrecoPeixe(
+        ppData && typeof ppData.sem === 'number' && typeof ppData.parceria === 'number'
+          ? { sem: ppData.sem, parceria: ppData.parceria }
+          : { sem: 36, parceria: 38 }
+      )
+      setCicloInicio(
+        cicloData && typeof cicloData.cicloInicio === 'string' ? cicloData.cicloInicio : new Date().toISOString()
+      )
+      setTempoOnlineRank(Array.isArray(toData?.users) ? toData.users : [])
     } catch (err) {
       console.warn('loadData', err)
       showToast('Erro ao carregar dados.', 'error')
     }
   }, [user, showToast])
 
+  const tickTempoOnline = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      await apiPost('tempo-online', { userId: user.id, minutes: 5 })
+      const toData = await apiGet('tempo-online')
+      setTempoOnlineRank(Array.isArray(toData?.users) ? toData.users : [])
+    } catch (err) {
+      console.warn('tickTempoOnline', err)
+    }
+  }, [user])
+
   useEffect(() => {
     if (user) loadData()
   }, [user, loadData])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const tick = () => {
+      apiPost('tempo-online', { userId: user.id, minutes: 5 }).catch(() => {})
+    }
+    tick()
+    const interval = setInterval(tick, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [user?.id])
 
   useEffect(() => {
     if (!user) {
@@ -114,6 +156,29 @@ export function AppProvider({ children }) {
     await apiPost('apanhas', data)
     setApanhas(data)
   }, [])
+  const saveMetas = useCallback(async (data) => {
+    await apiPost('metas', data)
+    setMetas(data)
+  }, [])
+  const saveValorReceber = useCallback(async (data) => {
+    await apiPost('valor-receber', data)
+    setValorReceber(data)
+  }, [])
+
+  const savePrecoPeixe = useCallback(async (data) => {
+    await apiPost('preco-peixe', data)
+    setPrecoPeixe(data)
+  }, [])
+
+  const marcarPago = useCallback(
+    async () => {
+      await apiPost('ciclo-pagamento/pagar', {})
+      const cicloData = await apiGet('ciclo-pagamento').catch(() => ({ cicloInicio: new Date().toISOString() }))
+      setCicloInicio(cicloData?.cicloInicio ?? new Date().toISOString())
+      setMetas([])
+    },
+    []
+  )
 
   const loadChat = useCallback(async () => {
     try {
@@ -185,6 +250,17 @@ export function AppProvider({ children }) {
     setMovimentos,
     apanhas,
     setApanhas,
+    metas,
+    setMetas,
+    valorReceber,
+    setValorReceber,
+    precoPeixe,
+    setPrecoPeixe,
+    cicloInicio,
+    setCicloInicio,
+    tempoOnlineRank,
+    setTempoOnlineRank,
+    tickTempoOnline,
     chatMessages,
     loadChat,
     sendChatMessage,
@@ -194,6 +270,10 @@ export function AppProvider({ children }) {
     saveCaixa,
     saveMovimentos,
     saveApanhas,
+    saveMetas,
+    saveValorReceber,
+    savePrecoPeixe,
+    marcarPago,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

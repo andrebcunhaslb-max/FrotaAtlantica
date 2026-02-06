@@ -1,7 +1,8 @@
-import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Settings } from 'lucide-react'
+import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Settings, LayoutDashboard } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const SIDEBAR_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
   { id: 'calc', label: 'Calculadora', Icon: Calculator },
   { id: 'vendas', label: 'Vendas a Empresas', Icon: ShoppingCart },
   { id: 'compras', label: 'Comprar Peixes', Icon: Package },

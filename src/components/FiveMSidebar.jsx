@@ -170,8 +170,13 @@ export default function FiveMSidebar() {
 
       {typeof document !== 'undefined' && tooltip.show && createPortal(
         <div
-          className="fixed z-[101] pointer-events-none rounded-lg border border-slate-600 bg-slate-900/98 px-3 py-2 text-xs shadow-lg"
-          style={{ left: Math.max(8, tooltip.x), top: tooltip.y }}
+          className="fixed z-[101] pointer-events-none rounded-lg border border-slate-600 px-3 py-2 text-xs shadow-lg"
+          style={{
+            left: Math.max(8, tooltip.x),
+            top: tooltip.y,
+            backgroundColor: document.documentElement.classList.contains('light') ? '#f1f5f9' : '#1e293b',
+            color: document.documentElement.classList.contains('light') ? '#1e293b' : '#e2e8f0',
+          }}
         >
           {tooltip.text}
         </div>,

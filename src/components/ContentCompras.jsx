@@ -3,13 +3,15 @@ import { Save } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentCompras() {
-  const { usuarios, registos, saveRegistos, showToast } = useApp()
+  const { usuarios, registos, saveRegistos, showToast, precoPeixe } = useApp()
   const [comprador, setComprador] = useState('')
   const [fornecedor, setFornecedor] = useState('')
   const [parceria, setParceria] = useState('nao')
   const [qtd, setQtd] = useState('')
 
-  const preco = parceria === 'sim' ? 38 : 36
+  const precoSem = precoPeixe?.sem ?? 36
+  const precoParceria = precoPeixe?.parceria ?? 38
+  const preco = parceria === 'sim' ? precoParceria : precoSem
   const valor = useMemo(() => (Number(qtd) || 0) * preco, [qtd, preco])
 
   const handleSubmit = async (e) => {
@@ -81,14 +83,14 @@ export default function ContentCompras() {
               onClick={() => setParceria('nao')}
               className={`pill ${parceria === 'nao' ? 'pill-active' : ''}`}
             >
-              Não parceiro (36€)
+              Não parceiro ({precoSem}€)
             </button>
             <button
               type="button"
               onClick={() => setParceria('sim')}
               className={`pill ${parceria === 'sim' ? 'pill-active' : ''}`}
             >
-              Parceiro (38€)
+              Parceiro ({precoParceria}€)
             </button>
           </div>
         </div>

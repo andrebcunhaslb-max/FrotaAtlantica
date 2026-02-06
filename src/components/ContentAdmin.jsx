@@ -6,6 +6,7 @@ import {
   Edit,
   UserPlus,
   X,
+  Banknote,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
@@ -14,6 +15,7 @@ const SUBTABS = [
   { id: 'caixa', label: 'Caixa' },
   { id: 'apanhas', label: 'Apanhas de Peixe' },
   { id: 'utilizadores', label: 'Utilizadores' },
+  { id: 'metas', label: 'Metas e Valor a Receber' },
 ]
 
 function parseDataRegisto(str) {
@@ -32,11 +34,18 @@ export default function ContentAdmin() {
     caixa,
     movimentos,
     apanhas,
+    metas,
+    valorReceber,
+    precoPeixe,
     loadData,
     saveRegistos,
     saveCaixa,
     saveMovimentos,
     saveUsuarios,
+    saveMetas,
+    saveValorReceber,
+    savePrecoPeixe,
+    marcarPago,
     showToast,
   } = useApp()
 
@@ -59,10 +68,33 @@ export default function ContentAdmin() {
   const [filtroUtilizadorApanhas, setFiltroUtilizadorApanhas] = useState('')
   const [filtroDataInicioApanhas, setFiltroDataInicioApanhas] = useState('')
   const [filtroDataFimApanhas, setFiltroDataFimApanhas] = useState('')
+  const [metasPorUser, setMetasPorUser] = useState({})
+  const [valorReceberPorUser, setValorReceberPorUser] = useState({})
+  const [metaPorGrupo, setMetaPorGrupo] = useState({})
+  const [metasSaving, setMetasSaving] = useState(false)
+  const [precoSemInput, setPrecoSemInput] = useState('')
+  const [precoParceriaInput, setPrecoParceriaInput] = useState('')
+  const [precoPeixeSaving, setPrecoPeixeSaving] = useState(false)
+  const [pagoSaving, setPagoSaving] = useState(false)
 
   useEffect(() => {
     if (activeSubtab === 'caixa') setValorCaixaTotal(caixa != null ? String(caixa) : '')
   }, [activeSubtab, caixa])
+
+  useEffect(() => {
+    if (activeSubtab !== 'metas') return
+    const userMetas = {}
+    const groupMetas = {}
+    for (const m of Array.isArray(metas) ? metas : []) {
+      if (m.userId != null) userMetas[String(m.userId)] = m.meta
+      if (m.grupo != null) groupMetas[m.grupo] = m.meta
+    }
+    setMetasPorUser(userMetas)
+    setMetaPorGrupo(groupMetas)
+    setValorReceberPorUser(typeof valorReceber === 'object' && valorReceber && !Array.isArray(valorReceber) ? { ...valorReceber } : {})
+    setPrecoSemInput(precoPeixe?.sem != null ? String(precoPeixe.sem) : '36')
+    setPrecoParceriaInput(precoPeixe?.parceria != null ? String(precoPeixe.parceria) : '38')
+  }, [activeSubtab, metas, valorReceber, precoPeixe])
 
   const registosFiltrados = useMemo(() => {
     return (registos || []).filter((r) => {
@@ -214,6 +246,65 @@ export default function ContentAdmin() {
       else if (editingUserIndex > i) setEditingUserIndex(editingUserIndex - 1)
     } catch {
       showToast('Erro ao guardar no servidor.', 'error')
+    }
+  }
+
+  const handleGuardarMetas = async () => {
+    setMetasSaving(true)
+    try {
+      const metasArray = []
+      for (const u of usuarios || []) {
+        const id = u.id
+        const meta = metasPorUser[String(id)]
+        if (meta != null && meta !== '' && !Number.isNaN(Number(meta))) {
+          metasArray.push({ userId: id, meta: Number(meta) })
+        }
+      }
+      const grupos = ['A', 'B', 'C', 'D', 'E', 'F']
+      for (const g of grupos) {
+        const meta = metaPorGrupo[g]
+        if (meta != null && meta !== '' && !Number.isNaN(Number(meta))) {
+          metasArray.push({ grupo: g, meta: Number(meta) })
+        }
+      }
+      await saveMetas(metasArray)
+      showToast('Metas guardadas.', 'success')
+    } catch {
+      showToast('Erro ao guardar no servidor.', 'error')
+    } finally {
+      setMetasSaving(false)
+    }
+  }
+
+  const handleGuardarPrecoPeixe = async () => {
+    const sem = Number(precoSemInput)
+    const parceria = Number(precoParceriaInput)
+    if (Number.isNaN(sem) || Number.isNaN(parceria) || sem < 0 || parceria < 0) {
+      showToast('Valores do peixe inválidos.', 'error')
+      return
+    }
+    setPrecoPeixeSaving(true)
+    try {
+      await savePrecoPeixe({ sem, parceria })
+      showToast('Preços do peixe guardados.', 'success')
+    } catch {
+      showToast('Erro ao guardar no servidor.', 'error')
+    } finally {
+      setPrecoPeixeSaving(false)
+    }
+  }
+
+  const handleMarcarPago = async () => {
+    if (!window.confirm('Marcar pagamento como efetuado? Isto reinicia o ciclo e limpa as metas. Os valores a receber no dashboard passam a ser calculados apenas a partir das apanhas após esta data.')) return
+    setPagoSaving(true)
+    try {
+      await marcarPago()
+      await loadData()
+      showToast('Pagamento marcado como efetuado. Novo ciclo iniciado.', 'success')
+    } catch {
+      showToast('Erro ao marcar pagamento.', 'error')
+    } finally {
+      setPagoSaving(false)
     }
   }
 
@@ -625,6 +716,124 @@ export default function ContentAdmin() {
         </>
       )}
 
+      {activeSubtab === 'metas' && (
+        <>
+          <h3 className="text-base font-semibold mb-2">Preços do peixe (valor por peixe)</h3>
+          <p className="text-sm text-slate-500 mb-2">
+            Estes valores são usados na Calculadora, Compras e no cálculo do valor a receber no dashboard (quantidade × valor).
+          </p>
+          <div className="mb-4 flex flex-wrap items-end gap-4">
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Sem parceria (€/peixe)</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={precoSemInput}
+                onChange={(e) => setPrecoSemInput(e.target.value)}
+                className="glass-input py-2 w-28"
+                placeholder="36"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Em parceria (€/peixe)</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={precoParceriaInput}
+                onChange={(e) => setPrecoParceriaInput(e.target.value)}
+                className="glass-input py-2 w-28"
+                placeholder="38"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleGuardarPrecoPeixe}
+              disabled={precoPeixeSaving}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {precoPeixeSaving ? 'A guardar…' : 'Guardar preços'}
+            </button>
+          </div>
+
+          <h3 className="text-base font-semibold mb-2 mt-6">Pagamento efetuado</h3>
+          <p className="text-sm text-slate-500 mb-2">
+            Ao marcar como pago, inicia um novo ciclo: o valor a receber no dashboard passa a contar apenas as apanhas a partir desta data e as metas são limpas.
+          </p>
+          <button
+            type="button"
+            onClick={handleMarcarPago}
+            disabled={pagoSaving}
+            className="inline-flex items-center gap-2 rounded-full border-2 border-emerald-500 bg-emerald-500/20 px-5 py-2.5 font-semibold text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50"
+          >
+            <Banknote className="h-4 w-4" />
+            {pagoSaving ? 'A processar…' : 'Marcar pagamento como efetuado'}
+          </button>
+
+          <h3 className="text-base font-semibold mb-2 mt-8">Metas semanais</h3>
+          <p className="text-sm text-slate-500 mb-4">
+            Defina a meta semanal por utilizador e a meta da equipa por grupo.
+          </p>
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
+              <div key={g}>
+                <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Meta equipa {g}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={metaPorGrupo[g] ?? ''}
+                  onChange={(e) => setMetaPorGrupo((prev) => ({ ...prev, [g]: e.target.value }))}
+                  className="glass-input py-2"
+                  placeholder="0"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-slate-600 mb-4">
+            <table className={tableClass}>
+              <thead>
+                <tr>
+                  <th className={thClass}>Nome</th>
+                  <th className={thClass}>Grupo</th>
+                  <th className={thClass}>Meta semanal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(usuarios || []).map((u) => (
+                  <tr key={u.id ?? u.nome}>
+                    <td className={tdClass}>{u.nome}</td>
+                    <td className={tdClass}>{u.grupo || '—'}</td>
+                    <td className={tdClass}>
+                      <input
+                        type="number"
+                        min={0}
+                        className="glass-input py-1.5 w-24 text-sm"
+                        value={metasPorUser[String(u.id)] ?? ''}
+                        onChange={(e) =>
+                          setMetasPorUser((prev) => ({ ...prev, [String(u.id)]: e.target.value }))
+                        }
+                        placeholder="0"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            type="button"
+            onClick={handleGuardarMetas}
+            disabled={metasSaving}
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {metasSaving ? 'A guardar…' : 'Guardar metas'}
+          </button>
+        </>
+      )}
+
       {activeSubtab === 'apanhas' && (
         <>
           <h3 className="text-base font-semibold mb-2">Apanhas de Peixe por Utilizador</h3>
@@ -693,6 +902,7 @@ export default function ContentAdmin() {
                 <tr>
                   <th className={thClass}>Utilizador</th>
                   <th className={thClass}>Quantidade</th>
+                  <th className={thClass}>Tipo</th>
                   <th className={thClass}>Data e Hora</th>
                 </tr>
               </thead>
@@ -704,6 +914,7 @@ export default function ContentAdmin() {
                       <td className={tdClass}>
                         <strong>{a.quantidade}</strong>
                       </td>
+                      <td className={tdClass}>{a.tipo === 'parceria' ? 'Parceria' : 'Sem'}</td>
                       <td className={tdClass}>
                         {a.datahora ? new Date(a.datahora).toLocaleString('pt-PT') : '—'}
                       </td>

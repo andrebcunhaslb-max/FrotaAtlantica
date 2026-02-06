@@ -10,6 +10,7 @@ import ContentCompras from './components/ContentCompras'
 import ContentFarm from './components/ContentFarm'
 import ContentChat from './components/ContentChat'
 import ContentAdmin from './components/ContentAdmin'
+import ContentDashboard from './components/ContentDashboard'
 import FiveMSidebar from './components/FiveMSidebar'
 
 function MainLayout() {
@@ -21,6 +22,7 @@ function MainLayout() {
       <div className="flex-1 min-w-0 py-5 px-6 transition duration-400 flex flex-col min-h-0">
         <Topbar />
         <div className="flex-1 min-h-0 overflow-auto mt-2">
+          {activeTab === 'dashboard' && <ContentDashboard />}
           {activeTab === 'calc' && <ContentCalc />}
           {activeTab === 'vendas' && <ContentVendas />}
           {activeTab === 'compras' && <ContentCompras />}
@@ -37,7 +39,7 @@ function MainLayout() {
 function AppContent() {
   const { user, authView, setAuthView } = useApp()
   return (
-    <main className="glass-panel w-full max-w-[1200px] flex overflow-hidden flex-row" id="main-content" aria-label="Conteúdo principal">
+    <main className="glass-panel w-[80vw] h-[80vh] max-w-[1600px] max-h-[90vh] flex overflow-hidden flex-row shrink-0" id="main-content" aria-label="Conteúdo principal">
       {!user ? (
         authView === 'recovery' ? (
           <RecoveryScreen onBack={() => setAuthView('login')} />

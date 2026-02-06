@@ -7,10 +7,61 @@
     @apply box-border;
   }
   body {
-    @apply m-0 min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-200 font-sans flex justify-center p-5;
+    @apply m-0 min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-200 font-sans flex justify-center items-center p-4;
+  }
+  #root {
+    @apply min-h-screen w-full flex items-center justify-center;
   }
   html.light body {
     @apply bg-gradient-to-b from-slate-100 to-slate-200 text-slate-900;
+  }
+
+  /* Scrollbar: alinhado ao design (slate + sky, cantos arredondados) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #475569 #1e293b;
+  }
+  html.light * {
+    scrollbar-color: #94a3b8 #e2e8f0;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #475569 0%, #334155 100%);
+    border-radius: 4px;
+    border: 2px solid #1e293b;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  }
+  *::-webkit-scrollbar-thumb:active {
+    background: #0ea5e9;
+  }
+  *::-webkit-scrollbar-corner {
+    background: #1e293b;
+    border-radius: 4px;
+  }
+  html.light *::-webkit-scrollbar-track {
+    background: #e2e8f0;
+  }
+  html.light *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+    border-color: #e2e8f0;
+  }
+  html.light *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  }
+  html.light *::-webkit-scrollbar-thumb:active {
+    background: #0ea5e9;
+  }
+  html.light *::-webkit-scrollbar-corner {
+    background: #e2e8f0;
   }
 }
 
@@ -61,5 +112,19 @@
   }
   html.light .sidebar-item-active {
     @apply from-sky-400/15 to-sky-500/10 border-sky-400/50 text-sky-600;
+  }
+  /* Tooltips Recharts: garantir fundo sólido */
+  .recharts-tooltip-wrapper,
+  .recharts-default-tooltip {
+    background-color: #1e293b !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+  html.light .recharts-tooltip-wrapper,
+  html.light .recharts-default-tooltip {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0;
+    color: #1e293b;
   }
 }
