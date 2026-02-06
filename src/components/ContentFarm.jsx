@@ -3,9 +3,13 @@ import { Save, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentFarm() {
-  const { user, apanhas, saveApanhas, loadData, showToast, precoPeixe } = useApp()
+  const { user, apanhas, saveApanhas, loadData, showToast, precoPeixe, precoPeixePorUtilizador } = useApp()
   const [quantidade, setQuantidade] = useState('')
-  const [tipo, setTipo] = useState('sem') // 'sem' | 'parceria'
+
+  const userKey = user ? String(user.id) : ''
+  const valorPorPeixe = (userKey && typeof precoPeixePorUtilizador?.[userKey] === 'number')
+    ? precoPeixePorUtilizador[userKey]
+    : (precoPeixe?.sem ?? 36)
 
   const minhasApanhas = (apanhas || [])
     .filter((a) => Number(a.user_id) === Number(user?.id))
@@ -22,7 +26,7 @@ export default function ContentFarm() {
       showToast('Utilizador não identificado.', 'error')
       return
     }
-    const todas = [...(apanhas || []), { user_id: user.id, quantidade: Number(q), tipo }]
+    const todas = [...(apanhas || []), { user_id: user.id, quantidade: Number(q) }]
     try {
       await saveApanhas(todas)
       setQuantidade('')
@@ -49,27 +53,9 @@ export default function ContentFarm() {
     <div className="glass-card p-5">
       <h2 className="text-lg font-semibold mt-0 mb-4">Minhas Apanhas de Peixe</h2>
       <form onSubmit={handleGuardar} className="space-y-4">
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Tipo
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setTipo('sem')}
-              className={`pill ${tipo === 'sem' ? 'pill-active' : ''}`}
-            >
-              Sem parceria ({precoPeixe?.sem ?? 36} €/peixe)
-            </button>
-            <button
-              type="button"
-              onClick={() => setTipo('parceria')}
-              className={`pill ${tipo === 'parceria' ? 'pill-active' : ''}`}
-            >
-              Em parceria ({precoPeixe?.parceria ?? 38} €/peixe)
-            </button>
-          </div>
-        </div>
+        <p className="text-sm text-slate-500">
+          Valor por peixe (pagamento): <strong>{valorPorPeixe} €</strong>
+        </p>
         <div>
           <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
             Quantidade de Peixes
@@ -97,9 +83,6 @@ export default function ContentFarm() {
                 Quantidade
               </th>
               <th className="border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium">
-                Tipo
-              </th>
-              <th className="border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium">
                 Data e Hora
               </th>
               <th className="border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium">
@@ -110,7 +93,7 @@ export default function ContentFarm() {
           <tbody>
             {minhasApanhas.length === 0 ? (
               <tr>
-                <td colSpan={4} className="border border-slate-600 px-2 py-3 text-center text-slate-500">
+                <td colSpan={3} className="border border-slate-600 px-2 py-3 text-center text-slate-500">
                   Nenhuma apanha registada.
                 </td>
               </tr>
@@ -118,7 +101,6 @@ export default function ContentFarm() {
               minhasApanhas.map((a) => (
                 <tr key={a.id}>
                   <td className="border border-slate-600 px-2 py-1.5 font-medium">{a.quantidade}</td>
-                  <td className="border border-slate-600 px-2 py-1.5">{a.tipo === 'parceria' ? 'Parceria' : 'Sem'}</td>
                   <td className="border border-slate-600 px-2 py-1.5">
                     {a.datahora ? new Date(a.datahora).toLocaleString('pt-PT') : '—'}
                   </td>

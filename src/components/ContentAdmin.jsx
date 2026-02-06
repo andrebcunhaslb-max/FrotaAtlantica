@@ -37,6 +37,10 @@ export default function ContentAdmin() {
     metas,
     valorReceber,
     precoPeixe,
+    precoPeixePorUtilizador,
+    savePrecoPeixe,
+    cicloInicio,
+    cicloPorUtilizador,
     loadData,
     saveRegistos,
     saveCaixa,
@@ -44,7 +48,6 @@ export default function ContentAdmin() {
     saveUsuarios,
     saveMetas,
     saveValorReceber,
-    savePrecoPeixe,
     marcarPago,
     showToast,
   } = useApp()
@@ -75,7 +78,9 @@ export default function ContentAdmin() {
   const [precoSemInput, setPrecoSemInput] = useState('')
   const [precoParceriaInput, setPrecoParceriaInput] = useState('')
   const [precoPeixeSaving, setPrecoPeixeSaving] = useState(false)
-  const [pagoSaving, setPagoSaving] = useState(false)
+  const [precoPorUserEdit, setPrecoPorUserEdit] = useState({}) // { [userId]: { sem: string, parceria: string } }
+  const [precoPorUserSaving, setPrecoPorUserSaving] = useState(false)
+  const [pagoSavingUserId, setPagoSavingUserId] = useState(null)
 
   useEffect(() => {
     if (activeSubtab === 'caixa') setValorCaixaTotal(caixa != null ? String(caixa) : '')
@@ -94,7 +99,15 @@ export default function ContentAdmin() {
     setValorReceberPorUser(typeof valorReceber === 'object' && valorReceber && !Array.isArray(valorReceber) ? { ...valorReceber } : {})
     setPrecoSemInput(precoPeixe?.sem != null ? String(precoPeixe.sem) : '36')
     setPrecoParceriaInput(precoPeixe?.parceria != null ? String(precoPeixe.parceria) : '38')
-  }, [activeSubtab, metas, valorReceber, precoPeixe])
+    const edit = {}
+    for (const u of usuarios || []) {
+      const id = String(u.id)
+      const val = precoPeixePorUtilizador?.[id]
+      const num = typeof val === 'number' ? val : (precoPeixe?.sem != null ? precoPeixe.sem : 36)
+      edit[id] = String(num)
+    }
+    setPrecoPorUserEdit(edit)
+  }, [activeSubtab, metas, valorReceber, precoPeixe, precoPeixePorUtilizador, usuarios])
 
   const registosFiltrados = useMemo(() => {
     return (registos || []).filter((r) => {
@@ -294,17 +307,66 @@ export default function ContentAdmin() {
     }
   }
 
-  const handleMarcarPago = async () => {
-    if (!window.confirm('Marcar pagamento como efetuado? Isto reinicia o ciclo e limpa as metas. Os valores a receber no dashboard passam a ser calculados apenas a partir das apanhas após esta data.')) return
-    setPagoSaving(true)
+  const valorReceberCalculadoPorUser = useMemo(() => {
+    const globalPreco = Number(precoPeixe?.sem) || 0
+    const out = {}
+    const list = apanhas || []
+    for (const u of usuarios || []) {
+      const id = u.id
+      const idKey = String(id)
+      const precoPorPeixe = typeof precoPeixePorUtilizador?.[idKey] === 'number' ? precoPeixePorUtilizador[idKey] : globalPreco
+      const cicloStr = cicloPorUtilizador?.[idKey] ?? cicloInicio
+      if (!cicloStr) {
+        out[id] = 0
+        continue
+      }
+      const cicloStart = new Date(cicloStr)
+      const total = list.reduce((acc, a) => {
+        if (String(a.user_id) !== idKey) return acc
+        const d = a.datahora ? new Date(a.datahora) : null
+        if (!d || d < cicloStart) return acc
+        const quantidade = Number(a.quantidade) || 0
+        return acc + quantidade * precoPorPeixe
+      }, 0)
+      out[id] = total
+    }
+    return out
+  }, [usuarios, apanhas, cicloInicio, cicloPorUtilizador, precoPeixe, precoPeixePorUtilizador])
+
+  const handleGuardarPrecoPorJogador = async () => {
+    const porUtilizador = {}
+    for (const [uid, val] of Object.entries(precoPorUserEdit)) {
+      const num = Number(val)
+      if (!Number.isNaN(num) && num >= 0) {
+        porUtilizador[uid] = num
+      }
+    }
+    setPrecoPorUserSaving(true)
     try {
-      await marcarPago()
+      await savePrecoPeixe({
+        sem: precoPeixe?.sem ?? 36,
+        parceria: precoPeixe?.parceria ?? 38,
+        porUtilizador
+      })
+      showToast('Valor por peixe (pagamento ao jogador) guardado.', 'success')
+    } catch {
+      showToast('Erro ao guardar no servidor.', 'error')
+    } finally {
+      setPrecoPorUserSaving(false)
+    }
+  }
+
+  const handleMarcarPagoUser = async (userId, nome) => {
+    if (!window.confirm(`Marcar ${nome || 'este utilizador'} como pago? O ciclo deste jogador será reiniciado e a meta removida.`)) return
+    setPagoSavingUserId(userId)
+    try {
+      await marcarPago(userId)
       await loadData()
-      showToast('Pagamento marcado como efetuado. Novo ciclo iniciado.', 'success')
+      showToast('Pagamento marcado como efetuado para este jogador.', 'success')
     } catch {
       showToast('Erro ao marcar pagamento.', 'error')
     } finally {
-      setPagoSaving(false)
+      setPagoSavingUserId(null)
     }
   }
 
@@ -718,9 +780,9 @@ export default function ContentAdmin() {
 
       {activeSubtab === 'metas' && (
         <>
-          <h3 className="text-base font-semibold mb-2">Preços do peixe (valor por peixe)</h3>
+          <h3 className="text-base font-semibold mb-2">Preços de venda (Calculadora e Compras)</h3>
           <p className="text-sm text-slate-500 mb-2">
-            Estes valores são usados na Calculadora, Compras e no cálculo do valor a receber no dashboard (quantidade × valor).
+            Valores por peixe para vendas a outros — usados na Calculadora e no registo de Compras. Não confundir com o valor por jogador (pagamento), definido na tabela abaixo.
           </p>
           <div className="mb-4 flex flex-wrap items-end gap-4">
             <div>
@@ -758,23 +820,9 @@ export default function ContentAdmin() {
             </button>
           </div>
 
-          <h3 className="text-base font-semibold mb-2 mt-6">Pagamento efetuado</h3>
-          <p className="text-sm text-slate-500 mb-2">
-            Ao marcar como pago, inicia um novo ciclo: o valor a receber no dashboard passa a contar apenas as apanhas a partir desta data e as metas são limpas.
-          </p>
-          <button
-            type="button"
-            onClick={handleMarcarPago}
-            disabled={pagoSaving}
-            className="inline-flex items-center gap-2 rounded-full border-2 border-emerald-500 bg-emerald-500/20 px-5 py-2.5 font-semibold text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50"
-          >
-            <Banknote className="h-4 w-4" />
-            {pagoSaving ? 'A processar…' : 'Marcar pagamento como efetuado'}
-          </button>
-
-          <h3 className="text-base font-semibold mb-2 mt-8">Metas semanais</h3>
+          <h3 className="text-base font-semibold mb-2 mt-8">Metas, pagamento ao jogador e ciclos</h3>
           <p className="text-sm text-slate-500 mb-4">
-            Defina a meta semanal por utilizador e a meta da equipa por grupo.
+            Meta semanal por utilizador e por equipa. A coluna €/peixe define quanto a administração paga por peixe a cada jogador (valor a receber = quantidade × esse valor). Marque como pago por jogador para reiniciar o ciclo.
           </p>
           <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
@@ -798,6 +846,9 @@ export default function ContentAdmin() {
                   <th className={thClass}>Nome</th>
                   <th className={thClass}>Grupo</th>
                   <th className={thClass}>Meta semanal</th>
+                  <th className={thClass}>€/peixe (pagamento ao jogador)</th>
+                  <th className={thClass}>Valor a receber (€)</th>
+                  <th className={thClass}>Pagamento</th>
                 </tr>
               </thead>
               <tbody>
@@ -817,20 +868,58 @@ export default function ContentAdmin() {
                         placeholder="0"
                       />
                     </td>
+                    <td className={tdClass}>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        className="glass-input py-1.5 w-24 text-sm"
+                        value={precoPorUserEdit[String(u.id)] ?? ''}
+                        onChange={(e) =>
+                          setPrecoPorUserEdit((prev) => ({ ...prev, [String(u.id)]: e.target.value }))
+                        }
+                        placeholder={String(precoPeixe?.sem ?? 36)}
+                      />
+                    </td>
+                    <td className={tdClass}>
+                      {(valorReceberCalculadoPorUser[u.id] ?? 0).toFixed(2)} €
+                    </td>
+                    <td className={tdClass}>
+                      <button
+                        type="button"
+                        onClick={() => handleMarcarPagoUser(u.id, u.nome)}
+                        disabled={pagoSavingUserId !== null}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50"
+                      >
+                        <Banknote className="h-3.5 w-3.5" />
+                        {pagoSavingUserId === u.id ? 'A processar…' : 'Marcar como pago'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <button
-            type="button"
-            onClick={handleGuardarMetas}
-            disabled={metasSaving}
-            className="btn-primary inline-flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {metasSaving ? 'A guardar…' : 'Guardar metas'}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleGuardarMetas}
+              disabled={metasSaving}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {metasSaving ? 'A guardar…' : 'Guardar metas'}
+            </button>
+            <button
+              type="button"
+              onClick={handleGuardarPrecoPorJogador}
+              disabled={precoPorUserSaving}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {precoPorUserSaving ? 'A guardar…' : 'Guardar preços por jogador'}
+            </button>
+          </div>
         </>
       )}
 

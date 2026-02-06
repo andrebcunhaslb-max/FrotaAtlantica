@@ -6,6 +6,7 @@ export default function ContentCalc() {
   const [qty, setQty] = useState(0)
   const [tipo, setTipo] = useState('sem') // sem | parceria
 
+  // Preços globais de venda (definidos na admin), para calcular vendas a outros — não confundir com valor por jogador (pagamento ao jogador)
   const precoSem = precoPeixe?.sem ?? 36
   const precoParceria = precoPeixe?.parceria ?? 38
   const preco = tipo === 'parceria' ? precoParceria : precoSem

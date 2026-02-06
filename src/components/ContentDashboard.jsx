@@ -94,8 +94,12 @@ export default function ContentDashboard() {
     tempoOnlineRank,
   } = ctx
   const metas = Array.isArray(ctx.metas) ? ctx.metas : []
-  const precoPeixe = ctx.precoPeixe && typeof ctx.precoPeixe.sem === 'number' && typeof ctx.precoPeixe.parceria === 'number' ? ctx.precoPeixe : { sem: 36, parceria: 38 }
+  const precoPeixeGlobal = ctx.precoPeixe && typeof ctx.precoPeixe.sem === 'number' ? ctx.precoPeixe.sem : 36
+  const precoPeixePorUtilizador = ctx.precoPeixePorUtilizador && typeof ctx.precoPeixePorUtilizador === 'object' ? ctx.precoPeixePorUtilizador : {}
+  const userKey = user ? String(user.id) : ''
+  const precoPagamentoJogador = (userKey && typeof precoPeixePorUtilizador[userKey] === 'number') ? precoPeixePorUtilizador[userKey] : precoPeixeGlobal
   const cicloInicio = ctx.cicloInicio
+  const cicloPorUtilizador = ctx.cicloPorUtilizador && typeof ctx.cicloPorUtilizador === 'object' ? ctx.cicloPorUtilizador : {}
 
   const cargo = user?.cargo || ''
   const isGestor = cargo === 'gestor'
@@ -123,19 +127,19 @@ export default function ContentDashboard() {
   }, [user, metas])
 
   const valorReceberUser = useMemo(() => {
-    if (!user || !cicloInicio) return 0
-    const cicloStart = new Date(cicloInicio)
-    const precoSem = Number(precoPeixe.sem) || 0
-    const precoParceria = Number(precoPeixe.parceria) || 0
+    if (!user || !userKey) return 0
+    const cicloStartStr = cicloPorUtilizador[userKey] ?? cicloInicio
+    if (!cicloStartStr) return 0
+    const cicloStart = new Date(cicloStartStr)
+    const precoPorPeixe = Number(precoPagamentoJogador) || 0
     return (apanhas || []).reduce((acc, a) => {
-      if (Number(a.user_id) !== Number(user.id)) return acc
+      if (String(a.user_id) !== userKey) return acc
       const d = a.datahora ? new Date(a.datahora) : null
       if (!d || d < cicloStart) return acc
-      const q = Number(a.quantidade) || 0
-      const preco = a.tipo === 'parceria' ? precoParceria : precoSem
-      return acc + q * preco
+      const quantidade = Number(a.quantidade) || 0
+      return acc + quantidade * precoPorPeixe
     }, 0)
-  }, [user, apanhas, cicloInicio, precoPeixe])
+  }, [user, userKey, apanhas, cicloInicio, cicloPorUtilizador, precoPagamentoJogador])
 
   const pessoalApanhasSemana = useMemo(() => {
     if (!user) return 0
@@ -268,6 +272,9 @@ export default function ContentDashboard() {
             <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Valor a receber</p>
             <p className="text-2xl font-bold text-emerald-400">
               {Number(valorReceberUser).toFixed(2)} €
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Conforme o seu valor por peixe e o que recolheu desde o último pagamento.
             </p>
           </div>
         </div>

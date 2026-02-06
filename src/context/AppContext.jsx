@@ -37,7 +37,9 @@ export function AppProvider({ children }) {
   const [metas, setMetas] = useState([])
   const [valorReceber, setValorReceber] = useState({})
   const [precoPeixe, setPrecoPeixe] = useState({ sem: 36, parceria: 38 })
+  const [precoPeixePorUtilizador, setPrecoPeixePorUtilizador] = useState({})
   const [cicloInicio, setCicloInicio] = useState(null)
+  const [cicloPorUtilizador, setCicloPorUtilizador] = useState({})
   const [tempoOnlineRank, setTempoOnlineRank] = useState([])
   const [chatMessages, setChatMessages] = useState([])
 
@@ -79,8 +81,22 @@ export function AppProvider({ children }) {
           ? { sem: ppData.sem, parceria: ppData.parceria }
           : { sem: 36, parceria: 38 }
       )
+      setPrecoPeixePorUtilizador(() => {
+        const raw = ppData?.porUtilizador && typeof ppData.porUtilizador === 'object' ? ppData.porUtilizador : {}
+        const out = {}
+        for (const [uid, val] of Object.entries(raw)) {
+          if (typeof val === 'number' && !Number.isNaN(val)) out[uid] = val
+          else if (val && typeof val === 'object' && typeof val.sem === 'number') out[uid] = val.sem
+        }
+        return out
+      })
       setCicloInicio(
         cicloData && typeof cicloData.cicloInicio === 'string' ? cicloData.cicloInicio : new Date().toISOString()
+      )
+      setCicloPorUtilizador(
+        cicloData && cicloData.porUtilizador && typeof cicloData.porUtilizador === 'object'
+          ? cicloData.porUtilizador
+          : {}
       )
       setTempoOnlineRank(Array.isArray(toData?.users) ? toData.users : [])
     } catch (err) {
@@ -167,18 +183,24 @@ export function AppProvider({ children }) {
 
   const savePrecoPeixe = useCallback(async (data) => {
     await apiPost('preco-peixe', data)
-    setPrecoPeixe(data)
+    if (data.sem != null && data.parceria != null) setPrecoPeixe((prev) => ({ ...prev, sem: data.sem, parceria: data.parceria }))
+    if (data.porUtilizador != null && typeof data.porUtilizador === 'object') {
+      const out = {}
+      for (const [uid, val] of Object.entries(data.porUtilizador)) {
+        if (typeof val === 'number' && !Number.isNaN(val)) out[uid] = val
+      }
+      setPrecoPeixePorUtilizador(out)
+    }
   }, [])
 
-  const marcarPago = useCallback(
-    async () => {
-      await apiPost('ciclo-pagamento/pagar', {})
-      const cicloData = await apiGet('ciclo-pagamento').catch(() => ({ cicloInicio: new Date().toISOString() }))
-      setCicloInicio(cicloData?.cicloInicio ?? new Date().toISOString())
-      setMetas([])
-    },
-    []
-  )
+  const marcarPago = useCallback(async (userId) => {
+    const id = userId != null ? String(userId) : null
+    if (!id) return
+    await apiPost('ciclo-pagamento/pagar', { userId: id })
+    const now = new Date().toISOString()
+    setCicloPorUtilizador((prev) => ({ ...prev, [id]: now }))
+    setMetas((prev) => (Array.isArray(prev) ? prev.filter((m) => String(m.userId) !== id) : []))
+  }, [])
 
   const loadChat = useCallback(async () => {
     try {
@@ -256,8 +278,12 @@ export function AppProvider({ children }) {
     setValorReceber,
     precoPeixe,
     setPrecoPeixe,
+    precoPeixePorUtilizador,
+    setPrecoPeixePorUtilizador,
     cicloInicio,
     setCicloInicio,
+    cicloPorUtilizador,
+    setCicloPorUtilizador,
     tempoOnlineRank,
     setTempoOnlineRank,
     tickTempoOnline,

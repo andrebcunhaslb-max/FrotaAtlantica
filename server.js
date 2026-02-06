@@ -116,10 +116,19 @@ app.get('/api/preco-peixe', async (req, res) => {
     const data = await readJson('precoPeixe');
     const sem = typeof data?.sem === 'number' ? data.sem : PRECO_PEIXE_DEFAULT.sem;
     const parceria = typeof data?.parceria === 'number' ? data.parceria : PRECO_PEIXE_DEFAULT.parceria;
-    res.json({ sem, parceria });
+    const raw = data?.porUtilizador && typeof data.porUtilizador === 'object' ? data.porUtilizador : {};
+    const porUtilizador = {};
+    for (const [uid, val] of Object.entries(raw)) {
+      if (typeof val === 'number' && !Number.isNaN(val) && val >= 0) {
+        porUtilizador[uid] = val;
+      } else if (val && typeof val === 'object' && typeof val.sem === 'number') {
+        porUtilizador[uid] = val.sem;
+      }
+    }
+    res.json({ sem, parceria, porUtilizador });
   } catch (err) {
     console.error(err);
-    res.json(PRECO_PEIXE_DEFAULT);
+    res.json({ ...PRECO_PEIXE_DEFAULT, porUtilizador: {} });
   }
 });
 
@@ -127,42 +136,81 @@ app.post('/api/preco-peixe', async (req, res) => {
   try {
     const body = req.body;
     if (body == null || typeof body !== 'object') {
-      return res.status(400).json({ error: 'Corpo deve ser um objeto { sem, parceria }' });
+      return res.status(400).json({ error: 'Corpo deve ser um objeto { sem?, parceria?, porUtilizador? }' });
     }
-    const sem = typeof body.sem === 'number' ? body.sem : Number(body.sem);
-    const parceria = typeof body.parceria === 'number' ? body.parceria : Number(body.parceria);
+    const existing = await readJson('precoPeixe');
+    const sem = body.sem != null ? (typeof body.sem === 'number' ? body.sem : Number(body.sem)) : (typeof existing?.sem === 'number' ? existing.sem : PRECO_PEIXE_DEFAULT.sem);
+    const parceria = body.parceria != null ? (typeof body.parceria === 'number' ? body.parceria : Number(body.parceria)) : (typeof existing?.parceria === 'number' ? existing.parceria : PRECO_PEIXE_DEFAULT.parceria);
     if (Number.isNaN(sem) || Number.isNaN(parceria) || sem < 0 || parceria < 0) {
       return res.status(400).json({ error: 'sem e parceria devem ser números não negativos' });
     }
-    await writeJson('precoPeixe', { sem, parceria });
-    res.json({ ok: true, sem, parceria });
+    let porUtilizador = existing?.porUtilizador && typeof existing.porUtilizador === 'object' ? { ...existing.porUtilizador } : {};
+    if (body.porUtilizador != null && typeof body.porUtilizador === 'object') {
+      porUtilizador = {};
+      for (const [uid, val] of Object.entries(body.porUtilizador)) {
+        const num = typeof val === 'number' ? val : Number(val);
+        if (!Number.isNaN(num) && num >= 0) {
+          porUtilizador[uid] = num;
+        }
+      }
+    }
+    await writeJson('precoPeixe', { sem, parceria, porUtilizador });
+    res.json({ ok: true, sem, parceria, porUtilizador });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao guardar preços do peixe' });
   }
 });
 
+function startOfCurrentWeekISO() {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - now.getUTCDay() + 1, 0, 0, 0, 0));
+  return start.toISOString();
+}
+
 app.get('/api/ciclo-pagamento', async (req, res) => {
   try {
-    let data = await readJson('cicloPagamento');
-    if (!data || typeof data.cicloInicio !== 'string') {
-      const cicloInicio = new Date().toISOString();
-      await writeJson('cicloPagamento', { cicloInicio });
-      return res.json({ cicloInicio });
+    const data = await readJson('cicloPagamento');
+    const defaultCicloInicio = startOfCurrentWeekISO();
+    let cicloInicio = data && typeof data.cicloInicio === 'string' ? data.cicloInicio : defaultCicloInicio;
+    let porUtilizador = data && data.porUtilizador && typeof data.porUtilizador === 'object' ? data.porUtilizador : {};
+    const noUserCycles = !porUtilizador || Object.keys(porUtilizador).length === 0;
+    const cicloDate = new Date(cicloInicio);
+    const now = new Date();
+    const sameDay = cicloDate.getUTCDate() === now.getUTCDate() && cicloDate.getUTCMonth() === now.getUTCMonth() && cicloDate.getUTCFullYear() === now.getUTCFullYear();
+    if (data && noUserCycles && sameDay && cicloDate.getTime() > now.getTime() - 24 * 60 * 60 * 1000) {
+      cicloInicio = defaultCicloInicio;
+      await writeJson('cicloPagamento', { cicloInicio, porUtilizador: {} });
+    } else if (!data || typeof data.cicloInicio !== 'string') {
+      await writeJson('cicloPagamento', { cicloInicio, porUtilizador: porUtilizador && Object.keys(porUtilizador).length ? porUtilizador : {} });
     }
-    res.json({ cicloInicio: data.cicloInicio });
+    res.json({ cicloInicio, porUtilizador });
   } catch (err) {
     console.error(err);
-    res.json({ cicloInicio: new Date().toISOString() });
+    res.json({ cicloInicio: startOfCurrentWeekISO(), porUtilizador: {} });
   }
 });
 
 app.post('/api/ciclo-pagamento/pagar', async (req, res) => {
   try {
-    const cicloInicio = new Date().toISOString();
-    await writeJson('cicloPagamento', { cicloInicio });
-    await writeJson('metas', []);
-    res.json({ ok: true, cicloInicio });
+    const body = req.body;
+    const userId = body != null && body.userId != null ? String(body.userId) : null;
+    if (!userId) {
+      return res.status(400).json({ error: 'Corpo deve ter userId' });
+    }
+    const now = new Date().toISOString();
+    let data = await readJson('cicloPagamento');
+    const cicloInicio = data && typeof data.cicloInicio === 'string' ? data.cicloInicio : now;
+    let porUtilizador = data && data.porUtilizador && typeof data.porUtilizador === 'object' ? { ...data.porUtilizador } : {};
+    porUtilizador[userId] = now;
+    await writeJson('cicloPagamento', { cicloInicio, porUtilizador });
+
+    const metasList = await readJson('metas');
+    const metasArray = Array.isArray(metasList) ? metasList : [];
+    const metasFiltered = metasArray.filter((m) => String(m.userId) !== userId);
+    await writeJson('metas', metasFiltered);
+
+    res.json({ ok: true, porUtilizador });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao marcar pagamento' });

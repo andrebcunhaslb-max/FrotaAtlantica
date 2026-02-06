@@ -9,6 +9,7 @@ export default function ContentCompras() {
   const [parceria, setParceria] = useState('nao')
   const [qtd, setQtd] = useState('')
 
+  // Preços globais de venda (definidos na admin), para registar compras — não confundir com valor por jogador (pagamento ao jogador)
   const precoSem = precoPeixe?.sem ?? 36
   const precoParceria = precoPeixe?.parceria ?? 38
   const preco = parceria === 'sim' ? precoParceria : precoSem
