@@ -21,8 +21,8 @@ export default function RecoveryScreen({ onBack }) {
   }
 
   return (
-    <div className="py-14 px-8 text-center max-w-md mx-auto">
-      <h2 className="text-xl font-semibold mb-2">Recuperação de PIN</h2>
+    <div className="py-8 px-4 sm:py-14 sm:px-8 text-center w-full max-w-md mx-auto">
+      <h2 className="text-lg sm:text-xl font-semibold mb-2">Recuperação de PIN</h2>
       <p className={`${mutedClass} text-sm mb-6`}>
         Indique o seu nome de utilizador. Se existir conta associada, enviaremos instruções.
       </p>
@@ -59,12 +59,12 @@ export default function RecoveryScreen({ onBack }) {
           <button
             type="button"
             onClick={onBack}
-            className="pill inline-flex items-center gap-2"
+            className="pill inline-flex items-center gap-2 min-h-[44px]"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar ao login
           </button>
-          <button type="submit" className="btn-primary inline-flex items-center gap-2">
+          <button type="submit" className="btn-primary inline-flex items-center gap-2 min-h-[44px]">
             <Send className="h-4 w-4" />
             Enviar
           </button>

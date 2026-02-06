@@ -349,11 +349,11 @@ export default function ContentDashboard() {
             <p className="text-slate-500 text-sm">Ainda não há registo de tempo online esta semana.</p>
           ) : (
             <div
-              className={`overflow-x-auto max-h-48 overflow-y-auto rounded-xl border ${
+              className={`overflow-x-touch overflow-y-auto max-h-48 rounded-xl border ${
                 isLight ? 'border-slate-300 bg-white/80' : 'border-slate-600 bg-slate-800/50'
               }`}
             >
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full text-sm border-collapse min-w-[200px]">
                 <thead className={`sticky top-0 ${isLight ? 'bg-slate-100' : 'bg-slate-800/95'}`}>
                   <tr>
                     <th

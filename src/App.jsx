@@ -20,7 +20,7 @@ function MainLayout() {
   return (
     <div className="flex flex-1 min-h-0 min-w-0">
       <AppSidebar />
-      <div className="flex-1 min-w-0 py-5 px-6 transition duration-400 flex flex-col min-h-0 overflow-auto">
+      <div className="flex-1 min-w-0 py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 transition duration-400 flex flex-col min-h-0 overflow-auto">
         {activeTab === 'dashboard' && <ContentDashboard />}
         {activeTab === 'calc' && <ContentCalc />}
         {activeTab === 'vendas' && <ContentVendas />}
@@ -37,7 +37,7 @@ function MainLayout() {
 function AppContent() {
   const { user, authView, setAuthView } = useApp()
   return (
-    <main className="glass-panel w-[80vw] h-[80vh] max-w-[1600px] max-h-[90vh] flex flex-col overflow-hidden shrink-0" id="main-content" aria-label="Conteúdo principal">
+    <main className="glass-panel w-full min-h-[100dvh] max-h-[100dvh] sm:w-[90vw] sm:min-h-[90dvh] sm:max-h-[90dvh] md:w-[80vw] md:max-w-[1600px] flex flex-col overflow-hidden shrink-0 max-w-full overflow-x-hidden" id="main-content" aria-label="Conteúdo principal">
       {!user ? (
         authView === 'recovery' ? (
           <RecoveryScreen onBack={() => setAuthView('login')} />

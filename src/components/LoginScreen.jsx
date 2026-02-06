@@ -68,7 +68,7 @@ export default function LoginScreen({ onRecoveryClick }) {
   }
 
   return (
-    <div className="relative overflow-hidden py-14 px-8 text-center">
+    <div className="relative overflow-hidden py-8 px-4 sm:py-14 sm:px-8 text-center">
       <div className="absolute -top-1/2 -right-1/2 h-[200%] w-[200%] animate-pulse bg-gradient-to-br from-sky-500/10 to-transparent pointer-events-none" aria-hidden />
       <div className="relative z-10">
         <div className="relative inline-block mb-4">
@@ -76,17 +76,17 @@ export default function LoginScreen({ onRecoveryClick }) {
           <img
             src="/logo-frota.png"
             alt="Frota do Atlântico"
-            className="h-[220px] w-[220px] rounded-full object-cover shadow-xl drop-shadow-2xl animate-logo-float"
+            className="h-32 w-32 sm:h-48 sm:w-48 md:h-[220px] md:w-[220px] rounded-full object-cover shadow-xl drop-shadow-2xl animate-logo-float"
           />
         </div>
-        <h1 className="text-3xl font-bold tracking-wider uppercase bg-gradient-to-r from-sky-400 to-sky-600 bg-clip-text text-transparent mb-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-wider uppercase bg-gradient-to-r from-sky-400 to-sky-600 bg-clip-text text-transparent mb-1">
           Frota do Atlântico
         </h1>
         <p className={`${mutedClass} text-xs uppercase tracking-widest font-medium mt-1`}>
           Navegamos com Confiança
         </p>
 
-        <form onSubmit={handleLogin} className="max-w-[380px] mx-auto mt-9 text-left">
+        <form onSubmit={handleLogin} className="w-full max-w-[380px] mx-auto mt-6 sm:mt-9 text-left">
           <label className={labelClass}>
             Utilizador
           </label>
@@ -115,21 +115,21 @@ export default function LoginScreen({ onRecoveryClick }) {
             tabIndex={0}
             onClick={handleFingerprintClick}
             onKeyDown={(e) => e.key === 'Enter' && handleFingerprintClick()}
-            className="mt-10 flex flex-col items-center gap-3 cursor-pointer"
+            className="mt-8 sm:mt-10 flex flex-col items-center gap-3 cursor-pointer min-h-[44px]"
             aria-label="Toque para entrar"
           >
             <div
-              className={`relative flex h-[110px] w-[110px] items-center justify-center rounded-full border-2 border-sky-400/40 bg-gradient-to-b from-sky-400/15 to-transparent shadow-lg transition overflow-hidden ${
+              className={`relative flex h-[80px] w-[80px] sm:h-[110px] sm:w-[110px] items-center justify-center rounded-full border-2 border-sky-400/40 bg-gradient-to-b from-sky-400/15 to-transparent shadow-lg transition overflow-hidden ${
                 scanning ? 'ring-4 ring-sky-400/30' : 'hover:border-sky-400 hover:shadow-sky-500/20'
               }`}
             >
               {scanning && (
                 <div
-                  className="absolute h-[85px] w-[85px] rounded-full bg-gradient-to-b from-transparent via-sky-400/80 to-transparent animate-scan-finger blur-[2px]"
+                  className="absolute h-[60px] w-[60px] sm:h-[85px] sm:w-[85px] rounded-full bg-gradient-to-b from-transparent via-sky-400/80 to-transparent animate-scan-finger blur-[2px]"
                   aria-hidden
                 />
               )}
-              <Fingerprint className="h-16 w-16 text-sky-400 relative z-10" strokeWidth={2} />
+              <Fingerprint className="h-12 w-12 sm:h-16 sm:w-16 text-sky-400 relative z-10" strokeWidth={2} />
             </div>
             <p className={`text-sm font-medium tracking-wide ${mutedClass}`}>Toque para entrar</p>
           </div>
