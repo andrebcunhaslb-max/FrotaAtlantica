@@ -48,32 +48,34 @@ export default function ContentCompras() {
     <div className="glass-card p-5">
       <h2 className="text-lg font-semibold mt-0 mb-4">Compras</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className={labelClass}>
-            Funcionário
-          </label>
-          <select
-            value={comprador}
-            onChange={(e) => setComprador(e.target.value)}
-            className="glass-input mt-2"
-          >
-            <option value="">—</option>
-            {usuarios.map((u) => (
-              <option key={u.id ?? u.nome} value={u.nome}>
-                {u.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>
-            Fornecedor
-          </label>
-          <input
-            value={fornecedor}
-            onChange={(e) => setFornecedor(e.target.value)}
-            className="glass-input mt-2"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>
+              Funcionário
+            </label>
+            <select
+              value={comprador}
+              onChange={(e) => setComprador(e.target.value)}
+              className="glass-input mt-2"
+            >
+              <option value="">—</option>
+              {usuarios.map((u) => (
+                <option key={u.id ?? u.nome} value={u.nome}>
+                  {u.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>
+              Fornecedor
+            </label>
+            <input
+              value={fornecedor}
+              onChange={(e) => setFornecedor(e.target.value)}
+              className="glass-input mt-2"
+            />
+          </div>
         </div>
         <div>
           <label className={labelClass}>
@@ -83,14 +85,14 @@ export default function ContentCompras() {
             <button
               type="button"
               onClick={() => setParceria('nao')}
-              className={`pill ${parceria === 'nao' ? 'pill-active' : ''}`}
+              className={`pill min-h-[44px] ${parceria === 'nao' ? 'pill-active' : ''}`}
             >
               Não parceiro ({precoSem}€)
             </button>
             <button
               type="button"
               onClick={() => setParceria('sim')}
-              className={`pill ${parceria === 'sim' ? 'pill-active' : ''}`}
+              className={`pill min-h-[44px] ${parceria === 'sim' ? 'pill-active' : ''}`}
             >
               Parceiro ({precoParceria}€)
             </button>
@@ -119,7 +121,7 @@ export default function ContentCompras() {
             className={`glass-input mt-2 ${!isLight ? 'bg-slate-800/50' : ''}`}
           />
         </div>
-        <button type="submit" className="btn-primary inline-flex items-center gap-2">
+        <button type="submit" className="btn-primary inline-flex items-center gap-2 min-h-[44px]">
           <Save className="h-4 w-4" />
           Guardar Compra
         </button>

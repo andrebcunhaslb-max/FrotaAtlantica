@@ -80,14 +80,14 @@ export default function ConfirmModal() {
         onClick={handleBackdropClick}
         aria-hidden
       />
-      <div className={`glass-panel relative z-10 w-full max-w-md p-6 shadow-2xl ${isLight ? 'border-slate-200' : 'border-slate-600/60'}`}>
+      <div className={`glass-panel relative z-10 w-full max-w-[calc(100vw-2rem)] sm:max-w-md mx-4 sm:mx-0 p-6 shadow-2xl ${isLight ? 'border-slate-200' : 'border-slate-600/60'}`}>
         <h2 id="confirm-modal-title" className={`text-lg font-semibold mb-2 ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
           {title}
         </h2>
         <p id="confirm-modal-desc" className={`text-sm mb-6 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
           {message}
         </p>
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3 [&_button]:min-h-[44px]">
           <button
             type="button"
             ref={cancelRef}

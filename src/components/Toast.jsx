@@ -26,7 +26,8 @@ export default function Toast() {
   return (
     <div
       role="alert"
-      className={`fixed right-6 bottom-6 z-50 flex min-w-[220px] max-w-xs items-center gap-2 rounded-xl border px-4 py-3 shadow-xl ${containerClass}`}
+      className={`fixed left-4 right-4 sm:left-auto sm:right-6 bottom-4 sm:bottom-6 z-50 flex min-w-[220px] max-w-[calc(100vw-2rem)] sm:max-w-xs items-center gap-2 rounded-xl border px-4 py-3 shadow-xl ${containerClass}`}
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
     >
       {isError ? (
         <AlertCircle className={`h-5 w-5 shrink-0 ${isLight ? 'text-red-500' : 'text-red-400'}`} aria-hidden />

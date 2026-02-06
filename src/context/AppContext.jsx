@@ -42,6 +42,7 @@ export function AppProvider({ children }) {
   const [cicloPorUtilizador, setCicloPorUtilizador] = useState({})
   const [tempoOnlineRank, setTempoOnlineRank] = useState([])
   const [chatMessages, setChatMessages] = useState([])
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     title: '',
@@ -328,6 +329,8 @@ export function AppProvider({ children }) {
     confirmModal,
     showConfirm,
     closeConfirm,
+    sidebarOpen,
+    setSidebarOpen,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
