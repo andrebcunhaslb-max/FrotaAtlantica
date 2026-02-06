@@ -10,6 +10,7 @@ import ContentVendas from './components/ContentVendas'
 import ContentCompras from './components/ContentCompras'
 import ContentFarm from './components/ContentFarm'
 import ContentChat from './components/ContentChat'
+import ContentEquipa from './components/ContentEquipa'
 import ContentAdmin from './components/ContentAdmin'
 import ContentDashboard from './components/ContentDashboard'
 import FiveMSidebar from './components/FiveMSidebar'
@@ -27,6 +28,7 @@ function MainLayout() {
         {activeTab === 'compras' && <ContentCompras />}
         {activeTab === 'farm' && <ContentFarm />}
         {activeTab === 'chat' && <ContentChat />}
+        {activeTab === 'equipa' && <ContentEquipa grupo={user.grupo} />}
         {activeTab === 'admin' && <ContentAdmin />}
       </div>
       <FiveMSidebar />

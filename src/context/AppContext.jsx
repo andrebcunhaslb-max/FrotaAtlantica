@@ -42,6 +42,8 @@ export function AppProvider({ children }) {
   const [cicloPorUtilizador, setCicloPorUtilizador] = useState({})
   const [tempoOnlineRank, setTempoOnlineRank] = useState([])
   const [chatMessages, setChatMessages] = useState([])
+  const [chatEquipa, setChatEquipa] = useState([])
+  const [comunicadosEquipa, setComunicadosEquipa] = useState([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -241,6 +243,67 @@ export function AppProvider({ children }) {
     [user, loadChat, showToast]
   )
 
+  const loadChatEquipa = useCallback(async (grupo) => {
+    if (!grupo) return
+    try {
+      const list = await apiGet(`chat?grupo=${encodeURIComponent(grupo)}`)
+      setChatEquipa(Array.isArray(list) ? list : [])
+    } catch (err) {
+      console.warn('loadChatEquipa', err)
+      setChatEquipa([])
+    }
+  }, [])
+
+  const sendChatEquipa = useCallback(
+    async (grupo, text) => {
+      if (!user || !grupo || !String(text).trim()) return
+      try {
+        await apiPost('chat', {
+          userId: user.id,
+          userName: user.nome,
+          cargo: user.cargo ?? '',
+          grupo,
+          text: String(text).trim()
+        })
+        await loadChatEquipa(grupo)
+      } catch (err) {
+        console.warn('sendChatEquipa', err)
+        showToast('Erro ao enviar mensagem.', 'error')
+      }
+    },
+    [user, loadChatEquipa, showToast]
+  )
+
+  const loadComunicados = useCallback(async (grupo) => {
+    if (!grupo) return
+    try {
+      const list = await apiGet(`comunicados?grupo=${encodeURIComponent(grupo)}`)
+      setComunicadosEquipa(Array.isArray(list) ? list : [])
+    } catch (err) {
+      console.warn('loadComunicados', err)
+      setComunicadosEquipa([])
+    }
+  }, [])
+
+  const sendComunicado = useCallback(
+    async (grupo, text) => {
+      if (!user || !grupo || !String(text).trim()) return
+      try {
+        await apiPost('comunicados', {
+          userId: user.id,
+          userName: user.nome,
+          grupo,
+          text: String(text).trim()
+        })
+        await loadComunicados(grupo)
+      } catch (err) {
+        console.warn('sendComunicado', err)
+        showToast('Erro ao publicar comunicado.', 'error')
+      }
+    },
+    [user, loadComunicados, showToast]
+  )
+
   const login = useCallback((u) => {
     setUser(u)
     try {
@@ -316,6 +379,12 @@ export function AppProvider({ children }) {
     chatMessages,
     loadChat,
     sendChatMessage,
+    chatEquipa,
+    comunicadosEquipa,
+    loadChatEquipa,
+    sendChatEquipa,
+    loadComunicados,
+    sendComunicado,
     loadData,
     saveUsuarios,
     saveRegistos,

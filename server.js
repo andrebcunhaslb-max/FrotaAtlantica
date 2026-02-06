@@ -218,15 +218,38 @@ app.post('/api/ciclo-pagamento/pagar', async (req, res) => {
 });
 
 const CHAT_MAX = 200;
+const COMUNICADOS_MAX = 100;
+
 app.get('/api/chat', async (req, res) => {
   try {
-    const data = await readJson('chat');
-    const list = Array.isArray(data) ? data : [];
-    const last = list.slice(-CHAT_MAX);
-    res.json(last);
+    const grupo = typeof req.query.grupo === 'string' ? req.query.grupo.trim() : null;
+    if (grupo) {
+      const data = await readJson('chat-equipa');
+      const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+      const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];
+      res.json(list.slice(-CHAT_MAX));
+    } else {
+      const data = await readJson('chat');
+      const list = Array.isArray(data) ? data : [];
+      res.json(list.slice(-CHAT_MAX));
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao ler chat' });
+  }
+});
+
+app.get('/api/comunicados', async (req, res) => {
+  try {
+    const grupo = typeof req.query.grupo === 'string' ? req.query.grupo.trim() : null;
+    if (!grupo) return res.json([]);
+    const data = await readJson('comunicados');
+    const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];
+    res.json(list.slice(-COMUNICADOS_MAX));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler comunicados' });
   }
 });
 
@@ -425,8 +448,7 @@ app.post('/api/chat', async (req, res) => {
     if (!text) {
       return res.status(400).json({ error: 'text não pode estar vazio' });
     }
-    const data = await readJson('chat');
-    const list = Array.isArray(data) ? data : [];
+    const grupo = typeof body.grupo === 'string' ? body.grupo.trim() : null;
     const message = {
       id: Date.now() + Math.random(),
       userId: body.userId,
@@ -435,13 +457,66 @@ app.post('/api/chat', async (req, res) => {
       text,
       timestamp: new Date().toISOString()
     };
-    list.push(message);
-    const trimmed = list.slice(-CHAT_MAX);
-    await writeJson('chat', trimmed);
+    if (grupo) {
+      const usuariosData = await readJson('usuarios');
+      const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+      const u = usuariosList.find((x) => String(x.id) === String(body.userId));
+      if (!u || (u.grupo || '').trim() !== grupo) {
+        return res.status(403).json({ error: 'Sem permissão para enviar mensagens nesta equipa' });
+      }
+      message.grupo = grupo;
+      const data = await readJson('chat-equipa');
+      const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+      const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];
+      list.push(message);
+      byGrupo[grupo] = list.slice(-CHAT_MAX);
+      await writeJson('chat-equipa', byGrupo);
+    } else {
+      const data = await readJson('chat');
+      const list = Array.isArray(data) ? data : [];
+      list.push(message);
+      await writeJson('chat', list.slice(-CHAT_MAX));
+    }
     res.json({ ok: true, message });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao guardar mensagem' });
+  }
+});
+
+app.post('/api/comunicados', async (req, res) => {
+  try {
+    const body = req.body;
+    const grupo = typeof body.grupo === 'string' ? body.grupo.trim() : null;
+    if (!grupo || !body.userId || !body.userName || typeof body.text !== 'string') {
+      return res.status(400).json({ error: 'Corpo deve ter grupo, userId, userName e text' });
+    }
+    const text = String(body.text).trim();
+    if (!text) return res.status(400).json({ error: 'text não pode estar vazio' });
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    const u = usuariosList.find((x) => String(x.id) === String(body.userId));
+    if (!u || (u.grupo || '').trim() !== grupo) {
+      return res.status(403).json({ error: 'Sem permissão para publicar comunicados nesta equipa' });
+    }
+    const data = await readJson('comunicados');
+    const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];
+    const msg = {
+      id: Date.now() + Math.random(),
+      userId: body.userId,
+      userName: String(body.userName),
+      grupo,
+      text,
+      timestamp: new Date().toISOString()
+    };
+    list.push(msg);
+    byGrupo[grupo] = list.slice(-COMUNICADOS_MAX);
+    await writeJson('comunicados', byGrupo);
+    res.json({ ok: true, message: msg });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar comunicado' });
   }
 });
 

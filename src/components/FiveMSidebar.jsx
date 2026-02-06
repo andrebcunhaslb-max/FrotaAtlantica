@@ -180,17 +180,7 @@ export default function FiveMSidebar() {
       <div className="md:hidden fixed bottom-4 right-4 z-40" data-fivem-fab>
         {mobileOpen && (
           <div
-            ref={(el) => {
-              mobilePanelRef.current = el
-              // #region agent log
-              if (el) {
-                const cls = isLight ? 'border-slate-200 bg-white' : 'border-slate-600 bg-slate-900'
-                const computed = typeof getComputedStyle === 'function' ? getComputedStyle(el) : null
-                const parentStyle = el.parentElement && typeof getComputedStyle === 'function' ? getComputedStyle(el.parentElement) : null
-                fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FiveMSidebar.jsx:mobilePanel',message:'mobile panel rendered',data:{isLight,className:cls,computedBg:computed?.backgroundColor,width:window.innerWidth,hasBgWhite:el.className.includes('bg-white'),hasBgSlate900:el.className.includes('bg-slate-900'),parentBg:parentStyle?.backgroundColor},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{})
-                fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FiveMSidebar.jsx:mobilePanel',message:'stacking check',data:{zIndex:computed?.zIndex,parentZIndex:parentStyle?.zIndex},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{})
-              }
-            }}
+            ref={mobilePanelRef}
             className={`absolute bottom-14 right-0 w-[min(280px,calc(100vw-2rem))] max-h-[60vh] overflow-y-auto rounded-xl border shadow-xl py-3 px-3 flex flex-col gap-2 ${
               isLight ? 'border-slate-200 bg-white' : 'border-slate-600 bg-slate-900'
             }`}
@@ -200,13 +190,7 @@ export default function FiveMSidebar() {
         )}
         <button
           type="button"
-          onClick={() => {
-            // #region agent log
-            const next = !mobileOpen
-            if (next) fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FiveMSidebar.jsx:fabClick',message:'opening mobile panel',data:{isLight,innerWidth:window.innerWidth,isMdBreakpoint:window.innerWidth>=768},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{})
-            // #endregion
-            setMobileOpen((v) => !v)
-          }}
+          onClick={() => setMobileOpen((v) => !v)}
           className={`min-w-[48px] min-h-[48px] rounded-full shadow-lg flex items-center justify-center ${
             isLight ? 'bg-slate-100 border border-slate-300 text-slate-700' : 'bg-slate-800 border border-slate-600 text-slate-300'
           }`}

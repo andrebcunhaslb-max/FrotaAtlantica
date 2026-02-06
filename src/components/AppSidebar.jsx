@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Settings, LayoutDashboard, LogOut } from 'lucide-react'
+import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Users, Settings, LayoutDashboard, LogOut } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const SIDEBAR_ITEMS = [
@@ -31,7 +31,15 @@ export default function AppSidebar() {
   const showAdmin =
     user?.cargo === 'direcao' || user?.cargo === 'gestor' || user?.cargo === 'supervisor'
 
-  const items = SIDEBAR_ITEMS.filter((t) => t.id !== 'admin' || showAdmin)
+  const userGrupo = (user?.grupo || '').trim()
+  const baseItems = SIDEBAR_ITEMS.filter((t) => t.id !== 'admin' || showAdmin)
+  const items = userGrupo
+    ? [
+        ...baseItems.slice(0, baseItems.findIndex((t) => t.id === 'chat') + 1),
+        { id: 'equipa', label: `Equipa ${userGrupo}`, Icon: Users },
+        ...baseItems.slice(baseItems.findIndex((t) => t.id === 'chat') + 1),
+      ]
+    : baseItems
 
   useEffect(() => {
     if (!sidebarOpen) return
