@@ -461,7 +461,11 @@ app.post('/api/chat', async (req, res) => {
       const usuariosData = await readJson('usuarios');
       const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
       const u = usuariosList.find((x) => String(x.id) === String(body.userId));
-      if (!u || (u.grupo || '').trim() !== grupo) {
+      if (!u) return res.status(403).json({ error: 'Utilizador não encontrado' });
+      const cargo = (u.cargo || '').toLowerCase();
+      const isDirecaoGestor = cargo === 'direcao' || cargo === 'gestor';
+      const inTeam = (u.grupo || '').trim() === grupo;
+      if (!isDirecaoGestor && !inTeam) {
         return res.status(403).json({ error: 'Sem permissão para enviar mensagens nesta equipa' });
       }
       message.grupo = grupo;
@@ -484,6 +488,76 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+app.delete('/api/chat-equipa', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const grupo = typeof body.grupo === 'string' ? body.grupo.trim() : null;
+    const messageId = body.messageId ?? body.id;
+    const userId = body.userId;
+    if (!grupo || messageId == null || !userId) {
+      return res.status(400).json({ error: 'Corpo deve ter grupo, messageId e userId' });
+    }
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    const u = usuariosList.find((x) => String(x.id) === String(userId));
+    if (!u) return res.status(403).json({ error: 'Utilizador não encontrado' });
+    const cargo = (u.cargo || '').toLowerCase();
+    const isDirecaoGestor = cargo === 'direcao' || cargo === 'gestor';
+    const isSupervisorInTeam = cargo === 'supervisor' && (u.grupo || '').trim() === grupo;
+    if (!isDirecaoGestor && !isSupervisorInTeam) {
+      return res.status(403).json({ error: 'Apenas supervisores da equipa ou direção/gestores podem apagar mensagens' });
+    }
+    const data = await readJson('chat-equipa');
+    const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];
+    const filtered = list.filter((m) => String(m.id) !== String(messageId));
+    if (filtered.length === list.length) {
+      return res.status(404).json({ error: 'Mensagem não encontrada' });
+    }
+    byGrupo[grupo] = filtered;
+    await writeJson('chat-equipa', byGrupo);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao apagar mensagem' });
+  }
+});
+
+app.delete('/api/comunicados', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const grupo = typeof body.grupo === 'string' ? body.grupo.trim() : null;
+    const messageId = body.messageId ?? body.id;
+    const userId = body.userId;
+    if (!grupo || messageId == null || !userId) {
+      return res.status(400).json({ error: 'Corpo deve ter grupo, messageId e userId' });
+    }
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    const u = usuariosList.find((x) => String(x.id) === String(userId));
+    if (!u) return res.status(403).json({ error: 'Utilizador não encontrado' });
+    const cargo = (u.cargo || '').toLowerCase();
+    const isDirecaoGestor = cargo === 'direcao' || cargo === 'gestor';
+    const isSupervisorInTeam = cargo === 'supervisor' && (u.grupo || '').trim() === grupo;
+    if (!isDirecaoGestor && !isSupervisorInTeam) {
+      return res.status(403).json({ error: 'Apenas supervisores da equipa ou direção/gestores podem apagar comunicados' });
+    }
+    const data = await readJson('comunicados');
+    const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    const list = Array.isArray(byGrupo[grupo]) ? byGrupo[grupo] : [];
+    const filtered = list.filter((m) => String(m.id) !== String(messageId));
+    if (filtered.length === list.length) {
+      return res.status(404).json({ error: 'Comunicado não encontrado' });
+    }
+    byGrupo[grupo] = filtered;
+    await writeJson('comunicados', byGrupo);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao apagar comunicado' });
+  }
+});
+
 app.post('/api/comunicados', async (req, res) => {
   try {
     const body = req.body;
@@ -496,11 +570,12 @@ app.post('/api/comunicados', async (req, res) => {
     const usuariosData = await readJson('usuarios');
     const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
     const u = usuariosList.find((x) => String(x.id) === String(body.userId));
-    if (!u || (u.grupo || '').trim() !== grupo) {
-      return res.status(403).json({ error: 'Sem permissão para publicar comunicados nesta equipa' });
-    }
-    if ((u.cargo || '').toLowerCase() !== 'supervisor') {
-      return res.status(403).json({ error: 'Apenas supervisores podem publicar comunicados' });
+    if (!u) return res.status(403).json({ error: 'Utilizador não encontrado' });
+    const cargo = (u.cargo || '').toLowerCase();
+    const isDirecaoGestor = cargo === 'direcao' || cargo === 'gestor';
+    const isSupervisorInTeam = cargo === 'supervisor' && (u.grupo || '').trim() === grupo;
+    if (!isDirecaoGestor && !isSupervisorInTeam) {
+      return res.status(403).json({ error: 'Apenas supervisores da equipa ou direção/gestores podem publicar comunicados' });
     }
     const data = await readJson('comunicados');
     const byGrupo = data && typeof data === 'object' && !Array.isArray(data) ? data : {};

@@ -27,16 +27,18 @@ const itemClass = (isActive, isLight) =>
   }`
 
 export default function AppSidebar() {
-  const { user, activeTab, setActiveTab, logout, isLight, sidebarOpen, setSidebarOpen, hasUnreadComunicados } = useApp()
+  const { user, activeTab, setActiveTab, logout, isLight, sidebarOpen, setSidebarOpen, hasUnreadComunicados, activeEquipaGrupo } = useApp()
   const showAdmin =
     user?.cargo === 'direcao' || user?.cargo === 'gestor' || user?.cargo === 'supervisor'
 
   const userGrupo = (user?.grupo || '').trim()
+  const isDirecaoGestor = user?.cargo === 'direcao' || user?.cargo === 'gestor'
+  const showEquipa = userGrupo || isDirecaoGestor
   const baseItems = SIDEBAR_ITEMS.filter((t) => t.id !== 'admin' || showAdmin)
-  const items = userGrupo
+  const items = showEquipa
     ? [
         ...baseItems.slice(0, baseItems.findIndex((t) => t.id === 'chat') + 1),
-        { id: 'equipa', label: `Equipa ${userGrupo}`, Icon: Users },
+        { id: 'equipa', label: userGrupo ? `Equipa ${userGrupo}` : 'Equipa', Icon: Users },
         ...baseItems.slice(baseItems.findIndex((t) => t.id === 'chat') + 1),
       ]
     : baseItems
@@ -60,7 +62,8 @@ export default function AppSidebar() {
       <nav className="flex flex-col gap-1 flex-1 min-h-0">
         {items.map(({ id, label, Icon }) => {
           const isActive = activeTab === id
-          const showComunicadoBadge = id === 'equipa' && userGrupo && hasUnreadComunicados?.(userGrupo)
+          const grupoForBadge = userGrupo || activeEquipaGrupo
+          const showComunicadoBadge = id === 'equipa' && grupoForBadge && hasUnreadComunicados?.(grupoForBadge)
           return (
             <button
               key={id}

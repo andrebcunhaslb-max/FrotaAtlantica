@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Send, MessageCircle, Megaphone } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Send, MessageCircle, Megaphone, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 function formatChatTime(iso) {
@@ -15,17 +15,32 @@ function formatChatTime(iso) {
 export default function ContentEquipa({ grupo }) {
   const {
     user,
+    usuarios,
     chatEquipa,
     comunicadosEquipa,
     loadChatEquipa,
     sendChatEquipa,
     loadComunicados,
     sendComunicado,
+    deleteChatMessageEquipa,
+    deleteComunicado,
     markComunicadosAsSeen,
     hasUnreadComunicados,
+    showConfirm,
+    activeEquipaGrupo,
+    setActiveEquipaGrupo,
     isLight,
   } = useApp()
-  const canPublishComunicados = (user?.cargo || '').toLowerCase() === 'supervisor'
+  const cargo = (user?.cargo || '').toLowerCase()
+  const isDirecaoGestor = cargo === 'direcao' || cargo === 'gestor'
+  const isSupervisor = cargo === 'supervisor'
+  const canModerate = isSupervisor || isDirecaoGestor
+  const canPublishComunicados = canModerate
+
+  const equipasDisponiveis = useMemo(() => {
+    const grupos = [...new Set((usuarios || []).map((u) => (u.grupo || '').trim()).filter(Boolean))]
+    return grupos.sort()
+  }, [usuarios])
   const [subtab, setSubtab] = useState('chat')
   const [chatInput, setChatInput] = useState('')
   const [comInput, setComInput] = useState('')
@@ -72,6 +87,26 @@ export default function ContentEquipa({ grupo }) {
     }
   }
 
+  const handleDeleteChat = (msg) => {
+    showConfirm({
+      title: 'Apagar mensagem',
+      message: 'Tens a certeza que queres apagar esta mensagem?',
+      variant: 'danger',
+      confirmLabel: 'Apagar',
+      onConfirm: () => deleteChatMessageEquipa(grupo, msg.id),
+    })
+  }
+
+  const handleDeleteComunicado = (msg) => {
+    showConfirm({
+      title: 'Apagar comunicado',
+      message: 'Tens a certeza que queres apagar este comunicado?',
+      variant: 'danger',
+      confirmLabel: 'Apagar',
+      onConfirm: () => deleteComunicado(grupo, msg.id),
+    })
+  }
+
   const handleSubmitComunicado = async (e) => {
     e.preventDefault()
     const text = comInput.trim()
@@ -85,6 +120,34 @@ export default function ContentEquipa({ grupo }) {
     }
   }
 
+  const needsTeamSelection = !grupo && isDirecaoGestor && equipasDisponiveis.length > 0
+
+  if (needsTeamSelection) {
+    return (
+      <div className="glass-card flex flex-col min-h-[320px] h-full">
+        <h2 className="text-lg font-semibold mt-0 mb-4 px-5 pt-5">Equipa</h2>
+        <p className={`px-5 text-sm mb-4 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
+          Escolhe a equipa cujo chat e comunicados queres ver:
+        </p>
+        <div className="px-5">
+          <select
+            value={activeEquipaGrupo || ''}
+            onChange={(e) => setActiveEquipaGrupo(e.target.value || null)}
+            className={`glass-input max-w-[200px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}
+            aria-label="Selecionar equipa"
+          >
+            <option value="">— Escolher equipa —</option>
+            {equipasDisponiveis.map((g) => (
+              <option key={g} value={g}>
+                Equipa {g}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    )
+  }
+
   if (!grupo) return null
 
   const msgClass = isLight
@@ -96,7 +159,23 @@ export default function ContentEquipa({ grupo }) {
 
   return (
     <div className="glass-card flex flex-col min-h-[320px] h-full">
-      <h2 className="text-lg font-semibold mt-0 mb-3 px-5 pt-5">Equipa {grupo}</h2>
+      <div className="flex flex-wrap items-center gap-3 mt-0 mb-3 px-5 pt-5">
+        <h2 className="text-lg font-semibold">Equipa {grupo}</h2>
+        {isDirecaoGestor && equipasDisponiveis.length > 1 && (
+          <select
+            value={grupo}
+            onChange={(e) => setActiveEquipaGrupo(e.target.value || null)}
+            className={`glass-input text-sm py-1.5 px-3 max-w-[140px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}
+            aria-label="Mudar equipa"
+          >
+            {equipasDisponiveis.map((g) => (
+              <option key={g} value={g}>
+                Equipa {g}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
       <div className="flex gap-2 mb-4 px-5">
         <button
           type="button"
@@ -131,7 +210,7 @@ export default function ContentEquipa({ grupo }) {
               </p>
             )}
             {chatEquipa.map((msg) => (
-              <div key={msg.id} className={msgClass}>
+              <div key={msg.id} className={`${msgClass} group`}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{msg.userName}</span>
                   {msg.cargo && (
@@ -140,6 +219,16 @@ export default function ContentEquipa({ grupo }) {
                     </span>
                   )}
                   <span className={`text-xs ml-auto ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>{formatChatTime(msg.timestamp)}</span>
+                  {canModerate && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteChat(msg)}
+                      className={`p-1 rounded opacity-70 hover:opacity-100 transition ${isLight ? 'text-slate-500 hover:text-red-600' : 'text-slate-400 hover:text-red-400'}`}
+                      aria-label="Apagar mensagem"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 <p className={`text-sm mt-1 break-words ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{msg.text}</p>
               </div>
@@ -174,11 +263,21 @@ export default function ContentEquipa({ grupo }) {
               </p>
             )}
             {comunicadosEquipa.map((msg) => (
-              <div key={msg.id} className={comClass}>
+              <div key={msg.id} className={`${comClass} group`}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Megaphone className={`h-3.5 w-3.5 shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
                   <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{msg.userName}</span>
                   <span className={`text-xs ml-auto ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>{formatChatTime(msg.timestamp)}</span>
+                  {canModerate && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteComunicado(msg)}
+                      className={`p-1 rounded opacity-70 hover:opacity-100 transition ${isLight ? 'text-slate-500 hover:text-red-600' : 'text-slate-400 hover:text-red-400'}`}
+                      aria-label="Apagar comunicado"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 <p className={`text-sm mt-1 break-words ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{msg.text}</p>
               </div>
@@ -204,7 +303,7 @@ export default function ContentEquipa({ grupo }) {
             </form>
           ) : (
             <p className={`p-4 border-t text-xs ${isLight ? 'border-slate-200 text-slate-600' : 'border-slate-600 text-slate-500'}`}>
-              Apenas supervisores podem publicar comunicados.
+              Apenas supervisores da equipa ou direção/gestores podem publicar comunicados.
             </p>
           )}
         </>

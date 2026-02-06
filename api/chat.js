@@ -47,7 +47,11 @@ module.exports = async function handler(req, res) {
         const usuariosData = await readJson('usuarios');
         const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
         const u = usuariosList.find((x) => String(x.id) === String(body.userId));
-        if (!u || (u.grupo || '').trim() !== g) {
+        if (!u) return res.status(403).json({ error: 'Utilizador não encontrado' });
+        const cargo = (u.cargo || '').toLowerCase();
+        const isDirecaoGestor = cargo === 'direcao' || cargo === 'gestor';
+        const inTeam = (u.grupo || '').trim() === g;
+        if (!isDirecaoGestor && !inTeam) {
           return res.status(403).json({ error: 'Sem permissão para enviar mensagens nesta equipa' });
         }
         message.grupo = g;

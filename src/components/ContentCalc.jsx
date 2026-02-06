@@ -19,7 +19,7 @@ export default function ContentCalc() {
     <div className="glass-card p-5">
       <h2 className="text-lg font-semibold mt-0 mb-4">Calculadora</h2>
       <label className={labelClass}>
-        Quantidade (caixas)
+        Quantidade (Peixes)
       </label>
       <input
         type="number"

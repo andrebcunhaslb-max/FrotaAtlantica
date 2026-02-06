@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { apiGet, apiPost } from '../api'
+import { apiGet, apiPost, apiDelete } from '../api'
 
 const AppContext = createContext(null)
 
@@ -45,6 +45,7 @@ export function AppProvider({ children }) {
   const [chatEquipa, setChatEquipa] = useState([])
   const [comunicadosEquipa, setComunicadosEquipa] = useState([])
   const [lastSeenComunicadoByGrupo, setLastSeenComunicadoByGrupo] = useState({})
+  const [activeEquipaGrupo, setActiveEquipaGrupo] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -142,14 +143,6 @@ export function AppProvider({ children }) {
     const interval = setInterval(tick, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [user?.id])
-
-  useEffect(() => {
-    const grupo = (user?.grupo || '').trim()
-    if (!grupo) return
-    loadComunicados(grupo)
-    const id = setInterval(() => loadComunicados(grupo), 8000)
-    return () => clearInterval(id)
-  }, [user?.grupo, loadComunicados])
 
   useEffect(() => {
     if (!user) {
@@ -313,6 +306,36 @@ export function AppProvider({ children }) {
     [user, loadComunicados, showToast]
   )
 
+  const deleteChatMessageEquipa = useCallback(
+    async (grupo, messageId) => {
+      if (!user || !grupo || messageId == null) return
+      try {
+        await apiDelete('chat-equipa', { grupo, messageId, userId: user.id })
+        await loadChatEquipa(grupo)
+        showToast('Mensagem apagada.', 'success')
+      } catch (err) {
+        console.warn('deleteChatMessageEquipa', err)
+        showToast(err.message || 'Erro ao apagar mensagem.', 'error')
+      }
+    },
+    [user, loadChatEquipa, showToast]
+  )
+
+  const deleteComunicado = useCallback(
+    async (grupo, messageId) => {
+      if (!user || !grupo || messageId == null) return
+      try {
+        await apiDelete('comunicados', { grupo, messageId, userId: user.id })
+        await loadComunicados(grupo)
+        showToast('Comunicado apagado.', 'success')
+      } catch (err) {
+        console.warn('deleteComunicado', err)
+        showToast(err.message || 'Erro ao apagar comunicado.', 'error')
+      }
+    },
+    [user, loadComunicados, showToast]
+  )
+
   const markComunicadosAsSeen = useCallback((grupo, list) => {
     if (!grupo) return
     setLastSeenComunicadoByGrupo((prev) => {
@@ -331,6 +354,14 @@ export function AppProvider({ children }) {
     },
     [comunicadosEquipa, lastSeenComunicadoByGrupo]
   )
+
+  useEffect(() => {
+    const grupo = (user?.grupo || '').trim() || activeEquipaGrupo
+    if (!grupo) return
+    loadComunicados(grupo)
+    const id = setInterval(() => loadComunicados(grupo), 8000)
+    return () => clearInterval(id)
+  }, [user?.grupo, activeEquipaGrupo, loadComunicados])
 
   const login = useCallback((u) => {
     setUser(u)
@@ -413,6 +444,8 @@ export function AppProvider({ children }) {
     sendChatEquipa,
     loadComunicados,
     sendComunicado,
+    deleteChatMessageEquipa,
+    deleteComunicado,
     markComunicadosAsSeen,
     hasUnreadComunicados,
     loadData,
@@ -430,6 +463,8 @@ export function AppProvider({ children }) {
     closeConfirm,
     sidebarOpen,
     setSidebarOpen,
+    activeEquipaGrupo,
+    setActiveEquipaGrupo,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
