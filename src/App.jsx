@@ -37,7 +37,11 @@ function MainLayout() {
 function AppContent() {
   const { user, authView, setAuthView } = useApp()
   return (
-    <main className="glass-panel w-[80vw] h-[80vh] max-w-[1600px] max-h-[90vh] flex flex-col overflow-hidden shrink-0" id="main-content" aria-label="Conteúdo principal">
+    <main
+        className={`glass-panel flex flex-col overflow-hidden shrink-0 ${!user ? 'w-full max-w-[420px] max-h-[85vh]' : 'w-[80vw] h-[80vh] max-w-[1600px] max-h-[90vh]'}`}
+        id="main-content"
+        aria-label="Conteúdo principal"
+      >
       {!user ? (
         authView === 'recovery' ? (
           <RecoveryScreen onBack={() => setAuthView('login')} />

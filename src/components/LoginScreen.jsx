@@ -68,8 +68,8 @@ export default function LoginScreen({ onRecoveryClick }) {
   }
 
   return (
-    <div className="relative overflow-hidden py-14 px-8 text-center">
-      <div className="absolute -top-1/2 -right-1/2 h-[200%] w-[200%] animate-pulse bg-gradient-to-br from-sky-500/10 to-transparent pointer-events-none" aria-hidden />
+    <div className="relative overflow-hidden py-8 px-6 text-center">
+      <div className="absolute -top-1/2 -right-1/2 h-[200%] w-[200%] bg-gradient-to-br from-slate-500/15 via-slate-600/10 to-transparent pointer-events-none" aria-hidden />
       <div className="relative z-10">
         <div className="relative inline-block mb-4">
           <div className="absolute inset-0 -z-10 rounded-full bg-sky-500/20 blur-2xl animate-pulse" aria-hidden />
@@ -86,7 +86,7 @@ export default function LoginScreen({ onRecoveryClick }) {
           Navegamos com Confiança
         </p>
 
-        <form onSubmit={handleLogin} className="max-w-[380px] mx-auto mt-9 text-left">
+        <form onSubmit={handleLogin} className="max-w-[320px] mx-auto mt-6 text-left">
           <label className={labelClass}>
             Utilizador
           </label>
@@ -109,6 +109,7 @@ export default function LoginScreen({ onRecoveryClick }) {
             className="glass-input mt-2"
             autoComplete="current-password"
           />
+          <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true">Entrar</button>
 
           <div
             role="button"
