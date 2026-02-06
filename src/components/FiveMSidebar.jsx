@@ -182,7 +182,7 @@ export default function FiveMSidebar() {
           <div
             ref={mobilePanelRef}
             className={`absolute bottom-14 right-0 w-[min(280px,calc(100vw-2rem))] max-h-[60vh] overflow-y-auto rounded-xl border shadow-xl py-3 px-3 flex flex-col gap-2 ${
-              isLight ? 'border-slate-200 bg-white/98' : 'border-slate-600 bg-slate-900/98'
+              isLight ? 'border-slate-200 bg-white' : 'border-slate-600 bg-slate-900'
             }`}
           >
             {panelContent}
@@ -204,7 +204,7 @@ export default function FiveMSidebar() {
         <div
           ref={popoverRef}
           className={`fixed z-[100] min-w-[180px] max-w-[calc(100vw-16px)] rounded-xl border px-4 py-3 shadow-xl ${
-            isLight ? 'border-slate-200 bg-white/98 text-slate-800' : 'border-slate-600 bg-slate-900/98'
+            isLight ? 'border-slate-200 bg-white text-slate-800' : 'border-slate-600 bg-slate-900 text-slate-200'
           }`}
           style={{
             left: Math.max(8, Math.min(popover.x ?? 0, window.innerWidth - 220)),
