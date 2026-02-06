@@ -42,6 +42,15 @@ export function AppProvider({ children }) {
   const [cicloPorUtilizador, setCicloPorUtilizador] = useState({})
   const [tempoOnlineRank, setTempoOnlineRank] = useState([])
   const [chatMessages, setChatMessages] = useState([])
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirmar',
+    cancelLabel: 'Cancelar',
+    variant: 'default',
+    onConfirm: null
+  })
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', isLight)
@@ -246,6 +255,22 @@ export function AppProvider({ children }) {
     window.location.reload()
   }, [])
 
+  const showConfirm = useCallback((config) => {
+    setConfirmModal({
+      open: true,
+      title: config.title ?? '',
+      message: config.message ?? '',
+      confirmLabel: config.confirmLabel ?? 'Confirmar',
+      cancelLabel: config.cancelLabel ?? 'Cancelar',
+      variant: config.variant ?? 'default',
+      onConfirm: typeof config.onConfirm === 'function' ? config.onConfirm : null
+    })
+  }, [])
+
+  const closeConfirm = useCallback(() => {
+    setConfirmModal((prev) => ({ ...prev, open: false }))
+  }, [])
+
   const value = {
     isLight,
     setIsLight,
@@ -300,6 +325,9 @@ export function AppProvider({ children }) {
     saveValorReceber,
     savePrecoPeixe,
     marcarPago,
+    confirmModal,
+    showConfirm,
+    closeConfirm,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

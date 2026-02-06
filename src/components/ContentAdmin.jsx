@@ -50,6 +50,7 @@ export default function ContentAdmin() {
     saveValorReceber,
     marcarPago,
     showToast,
+    showConfirm,
   } = useApp()
 
   const [filtroTipo, setFiltroTipo] = useState('')
@@ -356,18 +357,24 @@ export default function ContentAdmin() {
     }
   }
 
-  const handleMarcarPagoUser = async (userId, nome) => {
-    if (!window.confirm(`Marcar ${nome || 'este utilizador'} como pago? O ciclo deste jogador será reiniciado e a meta removida.`)) return
-    setPagoSavingUserId(userId)
-    try {
-      await marcarPago(userId)
-      await loadData()
-      showToast('Pagamento marcado como efetuado para este jogador.', 'success')
-    } catch {
-      showToast('Erro ao marcar pagamento.', 'error')
-    } finally {
-      setPagoSavingUserId(null)
-    }
+  const handleMarcarPagoUser = (userId, nome) => {
+    showConfirm({
+      title: 'Confirmar pagamento',
+      message: `Marcar ${nome || 'este utilizador'} como pago? O ciclo deste jogador será reiniciado e a meta removida.`,
+      variant: 'default',
+      onConfirm: async () => {
+        setPagoSavingUserId(userId)
+        try {
+          await marcarPago(userId)
+          await loadData()
+          showToast('Pagamento marcado como efetuado para este jogador.', 'success')
+        } catch {
+          showToast('Erro ao marcar pagamento.', 'error')
+        } finally {
+          setPagoSavingUserId(null)
+        }
+      }
+    })
   }
 
   const apanhasAdmin = useMemo(() => {

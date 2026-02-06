@@ -1,5 +1,6 @@
 import { AppProvider, useApp } from './context/AppContext'
 import Toast from './components/Toast'
+import ConfirmModal from './components/ConfirmModal'
 import LoginScreen from './components/LoginScreen'
 import RecoveryScreen from './components/RecoveryScreen'
 import Topbar from './components/Topbar'
@@ -58,6 +59,7 @@ export default function App() {
     <AppProvider>
       <AppContent />
       <Toast />
+      <ConfirmModal />
     </AppProvider>
   )
 }

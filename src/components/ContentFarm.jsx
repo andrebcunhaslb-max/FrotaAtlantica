@@ -3,7 +3,7 @@ import { Save, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentFarm() {
-  const { user, apanhas, saveApanhas, loadData, showToast, precoPeixe, precoPeixePorUtilizador } = useApp()
+  const { user, apanhas, saveApanhas, loadData, showToast, showConfirm, precoPeixe, precoPeixePorUtilizador } = useApp()
   const [quantidade, setQuantidade] = useState('')
 
   const userKey = user ? String(user.id) : ''
@@ -37,16 +37,22 @@ export default function ContentFarm() {
     }
   }
 
-  const handleApagar = async (id) => {
-    if (!window.confirm('Tem certeza que deseja apagar este registo?')) return
-    const filtradas = (apanhas || []).filter((a) => a.id !== id && String(a.id) !== String(id))
-    try {
-      await saveApanhas(filtradas)
-      await loadData()
-      showToast('Apanha removida.', 'success')
-    } catch {
-      showToast('Erro ao guardar no servidor.', 'error')
-    }
+  const handleApagar = (id) => {
+    showConfirm({
+      title: 'Apagar registo',
+      message: 'Tem certeza que deseja apagar este registo?',
+      variant: 'danger',
+      onConfirm: async () => {
+        const filtradas = (apanhas || []).filter((a) => a.id !== id && String(a.id) !== String(id))
+        try {
+          await saveApanhas(filtradas)
+          await loadData()
+          showToast('Apanha removida.', 'success')
+        } catch {
+          showToast('Erro ao guardar no servidor.', 'error')
+        }
+      }
+    })
   }
 
   return (
