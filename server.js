@@ -7,7 +7,8 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 
 app.use(express.json());
-app.use(express.static(__dirname));
+const distPath = path.join(__dirname, 'dist');
+app.use(express.static(distPath));
 
 function dataPath(name) {
   return path.join(DATA_DIR, `${name}.json`);
@@ -28,11 +29,21 @@ async function writeJson(name, data) {
   await fs.writeFile(dataPath(name), JSON.stringify(data, null, 2), 'utf8');
 }
 
+// Utilizadores iniciais quando não existe ficheiro (primeira execução / volume vazio no Docker)
+const USUARIOS_SEED = [
+  { id: 1, nome: 'admin', cargo: 'direcao', grupo: 'A', fivem_nick: 'Mauricio', pin: '1234' },
+  { id: 2, nome: 'André Silva', cargo: 'direcao', grupo: '', fivem_nick: 'MonsterPT', pin: '1990' },
+  { id: 3, nome: 'Red', cargo: 'funcionario', grupo: '', pin: '1111' }
+];
+
 // GET endpoints
 app.get('/api/usuarios', async (req, res) => {
   try {
     const data = await readJson('usuarios');
-    res.json(Array.isArray(data) ? data : []);
+    if (Array.isArray(data) && data.length > 0) {
+      return res.json(data);
+    }
+    res.json(USUARIOS_SEED);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao ler utilizadores' });
@@ -76,6 +87,19 @@ app.get('/api/apanhas', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao ler apanhas' });
+  }
+});
+
+const CHAT_MAX = 200;
+app.get('/api/chat', async (req, res) => {
+  try {
+    const data = await readJson('chat');
+    const list = Array.isArray(data) ? data : [];
+    const last = list.slice(-CHAT_MAX);
+    res.json(last);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler chat' });
   }
 });
 
@@ -179,10 +203,40 @@ app.post('/api/apanhas', async (req, res) => {
   }
 });
 
-// SPA fallback: serve index.html for non-file routes
+app.post('/api/chat', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body.text !== 'string' || !body.userId || !body.userName) {
+      return res.status(400).json({ error: 'Corpo deve ter userId, userName e text' });
+    }
+    const text = String(body.text).trim();
+    if (!text) {
+      return res.status(400).json({ error: 'text não pode estar vazio' });
+    }
+    const data = await readJson('chat');
+    const list = Array.isArray(data) ? data : [];
+    const message = {
+      id: Date.now() + Math.random(),
+      userId: body.userId,
+      userName: String(body.userName),
+      cargo: body.cargo != null ? String(body.cargo) : '',
+      text,
+      timestamp: new Date().toISOString()
+    };
+    list.push(message);
+    const trimmed = list.slice(-CHAT_MAX);
+    await writeJson('chat', trimmed);
+    res.json({ ok: true, message });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar mensagem' });
+  }
+});
+
+// SPA fallback: serve React app for non-file routes
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   } else {
     res.status(404).json({ error: 'Not found' });
   }

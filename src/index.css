@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+  body {
+    @apply m-0 min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-200 font-sans flex justify-center p-5;
+  }
+  html.light body {
+    @apply bg-gradient-to-b from-slate-100 to-slate-200 text-slate-900;
+  }
+}
+
+@layer components {
+  /* Glassmorphism panels */
+  .glass-panel {
+    @apply rounded-2xl border border-slate-700/50 bg-slate-900/90 shadow-2xl backdrop-blur-[18px];
+  }
+  html.light .glass-panel {
+    @apply border-slate-200/60 bg-white/80 shadow-xl;
+  }
+  .glass-card {
+    @apply rounded-2xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-sm;
+  }
+  html.light .glass-card {
+    @apply border-slate-200 bg-white/70;
+  }
+  /* Inputs */
+  .glass-input {
+    @apply w-full rounded-xl border border-slate-600 bg-slate-900/60 px-4 py-3.5 text-slate-200 placeholder-slate-500 outline-none transition-all duration-300 backdrop-blur-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20;
+  }
+  html.light .glass-input {
+    @apply border-slate-300 bg-slate-50/80 text-slate-900 placeholder-slate-400 focus:border-sky-500;
+  }
+  /* Primary button */
+  .btn-primary {
+    @apply rounded-full bg-gradient-to-br from-sky-400 to-sky-600 px-5 py-2.5 font-semibold text-slate-900 shadow-lg transition hover:from-sky-500 hover:to-sky-700 hover:shadow-xl active:scale-[0.98];
+  }
+  /* Tab / option pill */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-600 bg-slate-900/90 px-4 py-2.5 text-sm text-slate-400 transition cursor-pointer;
+  }
+  html.light .pill {
+    @apply border-slate-300 bg-white/80 text-slate-600;
+  }
+  .pill-active {
+    @apply border-transparent bg-gradient-to-br from-sky-400 to-sky-600 text-slate-900;
+  }
+  /* Sidebar dashboard */
+  .sidebar {
+    @apply border-slate-700/50;
+  }
+  html.light .sidebar {
+    @apply border-slate-200/60 bg-white/70;
+  }
+  .sidebar-item-active {
+    @apply text-sky-600;
+  }
+  html.light .sidebar-item-active {
+    @apply from-sky-400/15 to-sky-500/10 border-sky-400/50 text-sky-600;
+  }
+}

@@ -8,3 +8,12 @@ node_modules/
 Thumbs.db
 .vscode/
 README.md
+
+# Vercel-only (Docker uses server.js for API)
+api/
+vercel.json
+.vercelignore
+
+# Legacy / dev
+index.legacy.html
+dist/

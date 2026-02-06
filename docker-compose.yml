@@ -6,7 +6,8 @@ services:
     environment:
       - PORT=2050
     volumes:
-      - .:/app
-      # Mantém node_modules da imagem; evita sobrescrever com o do host e dispensa rebuild ao editar código
-      - /app/node_modules
+      - frota-data:/app/data
     restart: unless-stopped
+
+volumes:
+  frota-data:

@@ -1,0 +1,7 @@
+# Legacy and local-only
+index.legacy.html
+data/*.json
+node_modules
+.git
+.env*.local
+*.log
