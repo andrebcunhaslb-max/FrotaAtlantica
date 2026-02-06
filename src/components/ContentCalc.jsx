@@ -2,7 +2,10 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentCalc() {
-  const { precoPeixe } = useApp()
+  const { precoPeixe, isLight } = useApp()
+  const labelClass = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600' : 'block text-xs font-medium uppercase tracking-wider text-slate-500'
+  const priceBoxClass = isLight ? 'mt-4 rounded-xl border border-slate-300 bg-slate-50 p-4' : 'mt-4 rounded-xl border border-slate-600 bg-slate-800/50 p-4'
+  const priceBoxTextClass = isLight ? 'text-slate-700' : ''
   const [qty, setQty] = useState(0)
   const [tipo, setTipo] = useState('sem') // sem | parceria
 
@@ -15,7 +18,7 @@ export default function ContentCalc() {
   return (
     <div className="glass-card p-5">
       <h2 className="text-lg font-semibold mt-0 mb-4">Calculadora</h2>
-      <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+      <label className={labelClass}>
         Quantidade (caixas)
       </label>
       <input
@@ -25,7 +28,7 @@ export default function ContentCalc() {
         onChange={(e) => setQty(e.target.value)}
         className="glass-input mt-2"
       />
-      <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mt-4">
+      <label className={`${labelClass} mt-4`}>
         Tipo de venda
       </label>
       <div className="flex gap-2 mt-2 flex-wrap">
@@ -44,12 +47,12 @@ export default function ContentCalc() {
           Com parceria ({precoParceria}€)
         </button>
       </div>
-      <div className="mt-4 rounded-xl border border-slate-600 bg-slate-800/50 p-4">
-        <div className="flex justify-between text-sm mb-1.5">
+      <div className={priceBoxClass}>
+        <div className={`flex justify-between text-sm mb-1.5 ${priceBoxTextClass}`}>
           <span>Preço unitário</span>
           <span>{preco.toFixed(2)} €</span>
         </div>
-        <div className="flex justify-between text-sm font-medium">
+        <div className={`flex justify-between text-sm font-medium ${priceBoxTextClass}`}>
           <span>Total</span>
           <span>{total.toFixed(2)} €</span>
         </div>

@@ -18,7 +18,7 @@ function formatarDuracao(ms) {
 }
 
 export default function FiveMSidebar() {
-  const { usuarios } = useApp()
+  const { usuarios, isLight } = useApp()
   const [players, setPlayers] = useState([])
   const [sessionStart, setSessionStart] = useState({})
   const [popover, setPopover] = useState(null)
@@ -113,13 +113,15 @@ export default function FiveMSidebar() {
     <>
       <aside
         ref={sidebarRef}
-        className="w-[140px] min-w-[140px] py-3 px-3 border-l border-slate-600 bg-slate-900/60 flex flex-col items-stretch gap-2"
+        className={`w-[140px] min-w-[140px] py-3 px-3 border-l flex flex-col items-stretch gap-2 ${
+          isLight ? 'border-slate-200 bg-slate-50/90' : 'border-slate-600 bg-slate-900/60'
+        }`}
       >
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+        <span className={`text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
           <Users className="h-3 w-3" />
           FiveM
         </span>
-        <span className="text-[11px] text-slate-500 mb-1">
+        <span className={`text-[11px] mb-1 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
           {onlineCount}/{withNick.length} online
         </span>
         <div className="flex flex-col gap-1.5">
@@ -136,12 +138,16 @@ export default function FiveMSidebar() {
                 onMouseLeave={handleBadgeMouseLeave}
                 className={`w-full flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs ${
                   online
-                    ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400 cursor-pointer'
-                    : 'border-slate-600 bg-slate-800/30 text-slate-500'
+                    ? isLight
+                      ? 'border-emerald-400/60 bg-emerald-50 text-emerald-600 cursor-pointer'
+                      : 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400 cursor-pointer'
+                    : isLight
+                      ? 'border-slate-200 bg-slate-100/80 text-slate-600'
+                      : 'border-slate-600 bg-slate-800/30 text-slate-500'
                 }`}
               >
                 <Circle
-                  className={`h-1.5 w-1.5 shrink-0 ${online ? 'fill-emerald-400 text-emerald-400' : 'fill-slate-500 text-slate-500'}`}
+                  className={`h-1.5 w-1.5 shrink-0 ${online ? (isLight ? 'fill-emerald-500 text-emerald-500' : 'fill-emerald-400 text-emerald-400') : (isLight ? 'fill-slate-500 text-slate-500' : 'fill-slate-500 text-slate-500')}`}
                 />
                 {u.nome}
               </button>
@@ -153,14 +159,16 @@ export default function FiveMSidebar() {
       {typeof document !== 'undefined' && popover && createPortal(
         <div
           ref={popoverRef}
-          className="fixed z-[100] min-w-[180px] rounded-xl border border-slate-600 bg-slate-900/98 px-4 py-3 shadow-xl"
+          className={`fixed z-[100] min-w-[180px] rounded-xl border px-4 py-3 shadow-xl ${
+            isLight ? 'border-slate-200 bg-white/98 text-slate-800' : 'border-slate-600 bg-slate-900/98'
+          }`}
           style={{
             left: Math.max(8, Math.min(popover.x ?? 0, window.innerWidth - 220)),
             top: Math.max(8, (popover.y ?? 0) - 60),
           }}
         >
           <div className="font-semibold mb-1">{popover.nome}</div>
-          <div className="text-slate-500 text-sm flex items-center gap-1">
+          <div className={`text-sm flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
             <Phone className="h-3 w-3" />
             {popover.telemovel || 'Sem telemóvel'}
           </div>
@@ -170,12 +178,12 @@ export default function FiveMSidebar() {
 
       {typeof document !== 'undefined' && tooltip.show && createPortal(
         <div
-          className="fixed z-[101] pointer-events-none rounded-lg border border-slate-600 px-3 py-2 text-xs shadow-lg"
+          className={`fixed z-[101] pointer-events-none rounded-lg border px-3 py-2 text-xs shadow-lg ${
+            isLight ? 'border-slate-200 bg-slate-100 text-slate-800' : 'border-slate-600 bg-slate-800 text-slate-200'
+          }`}
           style={{
             left: Math.max(8, tooltip.x),
             top: tooltip.y,
-            backgroundColor: document.documentElement.classList.contains('light') ? '#f1f5f9' : '#1e293b',
-            color: document.documentElement.classList.contains('light') ? '#1e293b' : '#e2e8f0',
           }}
         >
           {tooltip.text}

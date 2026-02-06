@@ -433,17 +433,28 @@ export default function ContentAdmin() {
         Atualizar dados
       </button>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        {SUBTABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveSubtab(id)}
-            className={`pill ${activeSubtab === id ? 'pill-active' : ''}`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className={`flex flex-wrap border-b mb-4 -mx-1 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
+        {SUBTABS.map(({ id, label }) => {
+          const active = activeSubtab === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveSubtab(id)}
+              className={`px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px rounded-t-lg ${
+                active
+                  ? isLight
+                    ? 'border-sky-500 text-sky-600 bg-sky-50/50'
+                    : 'border-sky-500 text-sky-400 bg-sky-500/10'
+                  : isLight
+                    ? 'border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-100/80'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
       </div>
 
       {activeSubtab === 'relatorios' && (
