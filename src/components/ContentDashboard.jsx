@@ -128,7 +128,8 @@ export default function ContentDashboard() {
 
   const valorReceberUser = useMemo(() => {
     if (!user || !userKey) return 0
-    const cicloStartStr = cicloPorUtilizador[userKey] ?? cicloInicio
+    const entry = cicloPorUtilizador[userKey]
+    const cicloStartStr = (typeof entry === 'string' ? entry : (entry?.data ?? null)) ?? cicloInicio
     if (!cicloStartStr) return 0
     const cicloStart = new Date(cicloStartStr)
     const precoPorPeixe = Number(precoPagamentoJogador) || 0

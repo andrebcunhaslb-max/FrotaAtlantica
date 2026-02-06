@@ -146,17 +146,10 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (!user) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/c893ed90-26c3-4af2-b13d-17050665f523',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:fetch usuarios start',message:'GET usuarios called',data:{user:!!user},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
       apiGet('usuarios')
         .then((u) => {
           const list = Array.isArray(u) ? u : []
           setUsuarios(list)
-          // #region agent log
-          const first = list[0]
-          fetch('http://127.0.0.1:7242/ingest/c893ed90-26c3-4af2-b13d-17050665f523',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:setUsuarios',message:'usuarios set',data:{length:list.length,firstNome:first?.nome,firstPin:first?.pin,firstPinType:typeof first?.pin},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-          // #endregion
         })
         .catch((err) => {
           console.warn('Carregar utilizadores:', err)
@@ -207,12 +200,15 @@ export function AppProvider({ children }) {
     }
   }, [])
 
-  const marcarPago = useCallback(async (userId) => {
+  const marcarPago = useCallback(async (userId, { aprovadoPor = null, valor = null } = {}) => {
     const id = userId != null ? String(userId) : null
     if (!id) return
-    await apiPost('ciclo-pagamento/pagar', { userId: id })
+    await apiPost('ciclo-pagamento/pagar', { userId: id, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined })
     const now = new Date().toISOString()
-    setCicloPorUtilizador((prev) => ({ ...prev, [id]: now }))
+    setCicloPorUtilizador((prev) => ({
+      ...prev,
+      [id]: { data: now, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined }
+    }))
     setMetas((prev) => (Array.isArray(prev) ? prev.filter((m) => String(m.userId) !== id) : []))
   }, [])
 

@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   RefreshCw,
   Save,
@@ -16,6 +17,7 @@ const SUBTABS = [
   { id: 'apanhas', label: 'Apanhas de Peixe' },
   { id: 'utilizadores', label: 'Utilizadores' },
   { id: 'metas', label: 'Metas e Valor a Receber' },
+  { id: 'pagamentos', label: 'Histórico de Pagamentos' },
 ]
 
 function parseDataRegisto(str) {
@@ -27,6 +29,7 @@ function parseDataRegisto(str) {
 
 export default function ContentAdmin() {
   const {
+    user,
     activeSubtab,
     setActiveSubtab,
     usuarios,
@@ -83,6 +86,24 @@ export default function ContentAdmin() {
   const [precoPorUserEdit, setPrecoPorUserEdit] = useState({}) // { [userId]: { sem: string, parceria: string } }
   const [precoPorUserSaving, setPrecoPorUserSaving] = useState(false)
   const [pagoSavingUserId, setPagoSavingUserId] = useState(null)
+  const [filtroPagUtilizador, setFiltroPagUtilizador] = useState('')
+  const [filtroPagDataInicio, setFiltroPagDataInicio] = useState('')
+  const [filtroPagDataFim, setFiltroPagDataFim] = useState('')
+  const [filtroPagValorMin, setFiltroPagValorMin] = useState('')
+  const [filtroPagValorMax, setFiltroPagValorMax] = useState('')
+  const [filtroPagAprovadoPor, setFiltroPagAprovadoPor] = useState('')
+  const [showUserFormModal, setShowUserFormModal] = useState(false)
+
+  const closeUserFormModal = useCallback(() => {
+    setShowUserFormModal(false)
+    setEditingUserIndex(null)
+    setUserNome('')
+    setUserCargo('funcionario')
+    setUserGrupo('')
+    setUserFivemNick('')
+    setUserTelemovel('')
+    setUserPin('')
+  }, [])
 
   useEffect(() => {
     if (activeSubtab === 'caixa') setValorCaixaTotal(caixa != null ? String(caixa) : '')
@@ -191,6 +212,25 @@ export default function ContentAdmin() {
     }
   }
 
+  useEffect(() => {
+    if (!showUserFormModal) return
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setShowUserFormModal(false)
+        setEditingUserIndex(null)
+        setUserNome('')
+        setUserCargo('funcionario')
+        setUserGrupo('')
+        setUserFivemNick('')
+        setUserTelemovel('')
+        setUserPin('')
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [showUserFormModal])
+
   const handleAddUser = async (e) => {
     e.preventDefault()
     const nome = userNome.trim()
@@ -220,12 +260,7 @@ export default function ContentAdmin() {
     }
     try {
       await saveUsuarios(novo)
-      setUserNome('')
-      setUserCargo('funcionario')
-      setUserGrupo('')
-      setUserFivemNick('')
-      setUserTelemovel('')
-      setUserPin('')
+      closeUserFormModal()
     } catch {
       showToast('Erro ao guardar no servidor.', 'error')
     }
@@ -240,6 +275,7 @@ export default function ContentAdmin() {
     setUserTelemovel(u.telemovel || '')
     setUserPin(u.pin || '')
     setEditingUserIndex(i)
+    setShowUserFormModal(true)
   }
 
   const handleCancelarEdicao = () => {
@@ -257,8 +293,8 @@ export default function ContentAdmin() {
     try {
       await saveUsuarios(novo)
       showToast('Utilizador removido.', 'success')
-      if (editingUserIndex === i) handleCancelarEdicao()
-      else if (editingUserIndex > i) setEditingUserIndex(editingUserIndex - 1)
+      if (editingUserIndex === i) closeUserFormModal()
+      else if (editingUserIndex > i) setEditingUserIndex((prev) => prev - 1)
     } catch {
       showToast('Erro ao guardar no servidor.', 'error')
     }
@@ -317,12 +353,14 @@ export default function ContentAdmin() {
       const id = u.id
       const idKey = String(id)
       const precoPorPeixe = typeof precoPeixePorUtilizador?.[idKey] === 'number' ? precoPeixePorUtilizador[idKey] : globalPreco
-      const cicloStr = cicloPorUtilizador?.[idKey] ?? cicloInicio
-      if (!cicloStr) {
+      const entry = cicloPorUtilizador?.[idKey]
+      const cicloStr = typeof entry === 'string' ? entry : (entry?.data ?? null)
+      const cicloStrResolved = cicloStr ?? cicloInicio
+      if (!cicloStrResolved) {
         out[id] = 0
         continue
       }
-      const cicloStart = new Date(cicloStr)
+      const cicloStart = new Date(cicloStrResolved)
       const total = list.reduce((acc, a) => {
         if (String(a.user_id) !== idKey) return acc
         const d = a.datahora ? new Date(a.datahora) : null
@@ -358,7 +396,7 @@ export default function ContentAdmin() {
     }
   }
 
-  const handleMarcarPagoUser = (userId, nome) => {
+  const handleMarcarPagoUser = (userId, nome, valor) => {
     showConfirm({
       title: 'Confirmar pagamento',
       message: `Marcar ${nome || 'este utilizador'} como pago? O ciclo deste jogador será reiniciado e a meta removida.`,
@@ -366,7 +404,10 @@ export default function ContentAdmin() {
       onConfirm: async () => {
         setPagoSavingUserId(userId)
         try {
-          await marcarPago(userId)
+          await marcarPago(userId, {
+            aprovadoPor: user?.nome || null,
+            valor: valor != null ? valor : null
+          })
           await loadData()
           showToast('Pagamento marcado como efetuado para este jogador.', 'success')
         } catch {
@@ -422,6 +463,7 @@ export default function ContentAdmin() {
     : 'rounded-full border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30'
 
   return (
+    <>
     <div className="glass-card p-5">
       <h2 className="text-lg font-semibold mt-0 mb-4">Administração</h2>
       <button
@@ -712,103 +754,7 @@ export default function ContentAdmin() {
 
       {activeSubtab === 'utilizadores' && (
         <>
-          <h3 className="text-base font-semibold mb-2">Adicionar Utilizador</h3>
-          <form onSubmit={handleAddUser} className="space-y-4 max-w-md">
-            <div>
-              <label className={labelBlockClass}>
-                Nome
-              </label>
-              <input
-                value={userNome}
-                onChange={(e) => setUserNome(e.target.value)}
-                className="glass-input mt-2"
-              />
-            </div>
-            <div>
-              <label className={labelBlockClass}>
-                Cargo
-              </label>
-              <select
-                value={userCargo}
-                onChange={(e) => setUserCargo(e.target.value)}
-                className="glass-input mt-2"
-              >
-                <option value="funcionario">Funcionário</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="gestor">Gestor</option>
-                <option value="direcao">Direção</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelBlockClass}>
-                Grupo
-              </label>
-              <select
-                value={userGrupo}
-                onChange={(e) => setUserGrupo(e.target.value)}
-                className="glass-input mt-2"
-              >
-                <option value="">(opcional)</option>
-                {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelBlockClass}>
-                Nick FiveM
-              </label>
-              <input
-                value={userFivemNick}
-                onChange={(e) => setUserFivemNick(e.target.value)}
-                placeholder="Nome in-game no FiveM (opcional)"
-                className="glass-input mt-2"
-              />
-            </div>
-            <div>
-              <label className={labelBlockClass}>
-                Telemóvel
-              </label>
-              <input
-                type="tel"
-                value={userTelemovel}
-                onChange={(e) => setUserTelemovel(e.target.value)}
-                placeholder="Ex: 912345678"
-                className="glass-input mt-2"
-              />
-            </div>
-            <div>
-              <label className={labelBlockClass}>
-                PIN
-              </label>
-              <input
-                type="password"
-                value={userPin}
-                onChange={(e) => setUserPin(e.target.value)}
-                className="glass-input mt-2"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn-primary inline-flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                {editingUserIndex !== null ? 'Salvar Alterações' : 'Adicionar Utilizador'}
-              </button>
-              {editingUserIndex !== null && (
-                <button
-                  type="button"
-                  onClick={handleCancelarEdicao}
-                  className={btnCancelClass}
-                >
-                  <X className="h-4 w-4 inline mr-1" />
-                  Cancelar
-                </button>
-              )}
-            </div>
-          </form>
-
-          <h3 className="text-base font-semibold mt-6 mb-2">Lista de Utilizadores</h3>
+          <h3 className="text-base font-semibold mb-2">Lista de Utilizadores</h3>
           <div className={wrapperClass}>
             <table className={tableClass}>
               <thead>
@@ -853,6 +799,152 @@ export default function ContentAdmin() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleCancelarEdicao()
+              setShowUserFormModal(true)
+            }}
+            className="btn-primary inline-flex items-center gap-2 mt-4"
+          >
+            <UserPlus className="h-4 w-4" />
+            Adicionar Utilizador
+          </button>
+        </>
+      )}
+
+      {activeSubtab === 'pagamentos' && (
+        <>
+          <h3 className="text-base font-semibold mb-2">Histórico de Pagamentos</h3>
+          <div className={filterWrapperClass}>
+            <label className={labelClass}>Utilizador</label>
+            <input
+              type="text"
+              value={filtroPagUtilizador}
+              onChange={(e) => setFiltroPagUtilizador(e.target.value)}
+              placeholder="Filtrar por nome"
+              className="glass-input w-auto min-w-[120px] py-2"
+            />
+            <label className={labelClass}>Data inicial</label>
+            <input
+              type="date"
+              value={filtroPagDataInicio}
+              onChange={(e) => setFiltroPagDataInicio(e.target.value)}
+              className="glass-input w-auto min-w-[120px] py-2"
+            />
+            <label className={labelClass}>Data final</label>
+            <input
+              type="date"
+              value={filtroPagDataFim}
+              onChange={(e) => setFiltroPagDataFim(e.target.value)}
+              className="glass-input w-auto min-w-[120px] py-2"
+            />
+            <label className={labelClass}>Valor mín. (€)</label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={filtroPagValorMin}
+              onChange={(e) => setFiltroPagValorMin(e.target.value)}
+              placeholder="0"
+              className="glass-input w-auto min-w-[80px] py-2"
+            />
+            <label className={labelClass}>Valor máx. (€)</label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={filtroPagValorMax}
+              onChange={(e) => setFiltroPagValorMax(e.target.value)}
+              placeholder="—"
+              className="glass-input w-auto min-w-[80px] py-2"
+            />
+            <label className={labelClass}>Aprovado por</label>
+            <input
+              type="text"
+              value={filtroPagAprovadoPor}
+              onChange={(e) => setFiltroPagAprovadoPor(e.target.value)}
+              placeholder="Filtrar por nome"
+              className="glass-input w-auto min-w-[120px] py-2"
+            />
+          </div>
+          <div className={wrapperClass}>
+            {(() => {
+              const pagamentosBrutos = (usuarios || [])
+                .filter((u) => cicloPorUtilizador && cicloPorUtilizador[u.id])
+                .map((u) => {
+                  const entry = cicloPorUtilizador[u.id]
+                  const dataIso = typeof entry === 'string' ? entry : (entry?.data ?? null)
+                  if (!dataIso) return null
+                  return {
+                    nome: u.nome,
+                    data: new Date(dataIso).toLocaleDateString('pt-PT'),
+                    timestamp: new Date(dataIso).getTime(),
+                    aprovadoPor: typeof entry === 'object' ? (entry.aprovadoPor ?? '—') : '—',
+                    valor: typeof entry === 'object' && entry.valor != null ? entry.valor : null,
+                  }
+                })
+                .filter(Boolean)
+                .sort((a, b) => b.timestamp - a.timestamp)
+              const pagamentos = pagamentosBrutos.filter((p) => {
+                const fUtil = filtroPagUtilizador.trim().toLowerCase()
+                if (fUtil && !p.nome.toLowerCase().includes(fUtil)) return false
+                if (filtroPagDataInicio) {
+                  const dInicio = new Date(filtroPagDataInicio + 'T00:00:00').getTime()
+                  if (p.timestamp < dInicio) return false
+                }
+                if (filtroPagDataFim) {
+                  const dFim = new Date(filtroPagDataFim + 'T23:59:59').getTime()
+                  if (p.timestamp > dFim) return false
+                }
+                const val = p.valor != null ? p.valor : 0
+                const fMin = filtroPagValorMin !== '' && !Number.isNaN(Number(filtroPagValorMin)) ? Number(filtroPagValorMin) : null
+                if (fMin != null && val < fMin) return false
+                const fMax = filtroPagValorMax !== '' && !Number.isNaN(Number(filtroPagValorMax)) ? Number(filtroPagValorMax) : null
+                if (fMax != null && val > fMax) return false
+                const fAprov = filtroPagAprovadoPor.trim().toLowerCase()
+                if (fAprov && !String(p.aprovadoPor || '').toLowerCase().includes(fAprov)) return false
+                return true
+              })
+              if (pagamentosBrutos.length === 0) {
+                return (
+                  <p className={mutedTextClass}>
+                    Não há pagamentos registados.
+                  </p>
+                )
+              }
+              if (pagamentos.length === 0) {
+                return (
+                  <p className={mutedTextClass}>
+                    Nenhum resultado para os filtros aplicados.
+                  </p>
+                )
+              }
+              return (
+                <table className={tableClass}>
+                  <thead>
+                    <tr>
+                      <th className={thClass}>Utilizador</th>
+                      <th className={thClass}>Data do pagamento</th>
+                      <th className={thClass}>Valor (€)</th>
+                      <th className={thClass}>Aprovado por</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagamentos.map((p, i) => (
+                      <tr key={i}>
+                        <td className={tdClass}>{p.nome}</td>
+                        <td className={tdClass}>{p.data}</td>
+                        <td className={tdClass}>{p.valor != null ? `${Number(p.valor).toFixed(2)} €` : '—'}</td>
+                        <td className={tdClass}>{p.aprovadoPor}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            })()}
           </div>
         </>
       )}
@@ -966,7 +1058,7 @@ export default function ContentAdmin() {
                     <td className={tdClass}>
                       <button
                         type="button"
-                        onClick={() => handleMarcarPagoUser(u.id, u.nome)}
+                        onClick={() => handleMarcarPagoUser(u.id, u.nome, valorReceberCalculadoPorUser[u.id] ?? 0)}
                         disabled={pagoSavingUserId !== null}
                         className={isLight ? 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50' : 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50'}
                       >
@@ -1103,6 +1195,116 @@ export default function ContentAdmin() {
           </div>
         </>
       )}
+
+      {showUserFormModal && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="user-form-modal-title"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={closeUserFormModal}
+            aria-hidden
+          />
+          <div className={`glass-panel relative z-10 w-full max-w-[calc(100vw-2rem)] sm:max-w-md mx-4 sm:mx-0 p-6 shadow-2xl ${isLight ? 'border-slate-200' : 'border-slate-600/60'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 id="user-form-modal-title" className={`text-lg font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+                {editingUserIndex !== null ? 'Editar Utilizador' : 'Adicionar Utilizador'}
+              </h2>
+              <button
+                type="button"
+                onClick={closeUserFormModal}
+                className={`p-1 rounded-lg transition ${isLight ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-slate-800 text-slate-400'}`}
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className={labelBlockClass}>Nome</label>
+                <input
+                  value={userNome}
+                  onChange={(e) => setUserNome(e.target.value)}
+                  className="glass-input mt-2"
+                />
+              </div>
+              <div>
+                <label className={labelBlockClass}>Cargo</label>
+                <select
+                  value={userCargo}
+                  onChange={(e) => setUserCargo(e.target.value)}
+                  className="glass-input mt-2"
+                >
+                  <option value="funcionario">Funcionário</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="gestor">Gestor</option>
+                  <option value="direcao">Direção</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelBlockClass}>Grupo</label>
+                <select
+                  value={userGrupo}
+                  onChange={(e) => setUserGrupo(e.target.value)}
+                  className="glass-input mt-2"
+                >
+                  <option value="">(opcional)</option>
+                  {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelBlockClass}>Nick FiveM</label>
+                <input
+                  value={userFivemNick}
+                  onChange={(e) => setUserFivemNick(e.target.value)}
+                  placeholder="Nome in-game no FiveM (opcional)"
+                  className="glass-input mt-2"
+                />
+              </div>
+              <div>
+                <label className={labelBlockClass}>Telemóvel</label>
+                <input
+                  type="tel"
+                  value={userTelemovel}
+                  onChange={(e) => setUserTelemovel(e.target.value)}
+                  placeholder="Ex: 912345678"
+                  className="glass-input mt-2"
+                />
+              </div>
+              <div>
+                <label className={labelBlockClass}>PIN</label>
+                <input
+                  type="password"
+                  value={userPin}
+                  onChange={(e) => setUserPin(e.target.value)}
+                  className="glass-input mt-2"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="btn-primary inline-flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  {editingUserIndex !== null ? 'Salvar Alterações' : 'Adicionar Utilizador'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeUserFormModal}
+                  className={btnCancelClass}
+                >
+                  <X className="h-4 w-4 inline mr-1" />
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
+    </>
   )
 }

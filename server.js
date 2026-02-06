@@ -199,10 +199,12 @@ app.post('/api/ciclo-pagamento/pagar', async (req, res) => {
       return res.status(400).json({ error: 'Corpo deve ter userId' });
     }
     const now = new Date().toISOString();
+    const aprovadoPor = body != null && body.aprovadoPor != null ? String(body.aprovadoPor).trim() || null : null;
+    const valor = body != null && body.valor != null && !Number.isNaN(Number(body.valor)) ? Number(body.valor) : null;
     let data = await readJson('cicloPagamento');
     const cicloInicio = data && typeof data.cicloInicio === 'string' ? data.cicloInicio : now;
     let porUtilizador = data && data.porUtilizador && typeof data.porUtilizador === 'object' ? { ...data.porUtilizador } : {};
-    porUtilizador[userId] = now;
+    porUtilizador[userId] = { data: now, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined };
     await writeJson('cicloPagamento', { cicloInicio, porUtilizador });
 
     const metasList = await readJson('metas');

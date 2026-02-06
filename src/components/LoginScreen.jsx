@@ -33,17 +33,6 @@ export default function LoginScreen({ onRecoveryClick }) {
     e?.preventDefault()
     const u = normalizeNome(username)
     const p = String(pin).trim()
-    // #region agent log
-    const samples = usuarios.slice(0, 3).map((us) => ({
-      nome: us.nome,
-      pin: us.pin,
-      pinType: typeof us.pin,
-      nomeNorm: normalizeNome(us.nome),
-      nomeMatch: !!(us.nome && normalizeNome(us.nome) === u),
-      pinMatch: String(us.pin) === p
-    }))
-    fetch('http://127.0.0.1:7242/ingest/c893ed90-26c3-4af2-b13d-17050665f523',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginScreen.jsx:handleLogin',message:'login attempt',data:{u,p,usuariosLength:usuarios.length,samples},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     if (!u || !p) {
       showToast('Preencha utilizador e PIN.', 'error')
       return
@@ -52,10 +41,6 @@ export default function LoginScreen({ onRecoveryClick }) {
       (us) => us.nome && normalizeNome(us.nome) === u && String(us.pin) === p
     )
     if (!encontrado) {
-      // #region agent log
-      const redUser = usuarios.find((us) => us.nome && normalizeNome(us.nome) === 'red')
-      fetch('http://127.0.0.1:7242/ingest/c893ed90-26c3-4af2-b13d-17050665f523',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginScreen.jsx:login failed',message:'encontrado null',data:{usuariosLength:usuarios.length,u,p,redInList:!!redUser,redPin:redUser?.pin,redPinType:typeof redUser?.pin,pinEquals:redUser?String(redUser.pin)===p:null,allNomes:usuarios.map(us=>us.nome)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       if (usuarios.length === 0) {
         showToast('Nenhum utilizador carregado. Verifique a ligação ao servidor.', 'error')
       } else {
