@@ -3,7 +3,9 @@ import { ArrowLeft, Send } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function RecoveryScreen({ onBack }) {
-  const { showToast } = useApp()
+  const { showToast, isLight } = useApp()
+  const labelClass = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600' : 'block text-xs font-medium uppercase tracking-wider text-slate-500'
+  const mutedClass = isLight ? 'text-slate-600' : 'text-slate-500'
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [mensagem, setMensagem] = useState('')
@@ -21,12 +23,12 @@ export default function RecoveryScreen({ onBack }) {
   return (
     <div className="py-14 px-8 text-center max-w-md mx-auto">
       <h2 className="text-xl font-semibold mb-2">Recuperação de PIN</h2>
-      <p className="text-slate-500 text-sm mb-6">
+      <p className={`${mutedClass} text-sm mb-6`}>
         Indique o seu nome de utilizador. Se existir conta associada, enviaremos instruções.
       </p>
       <form onSubmit={handleEnviar} className="text-left space-y-4">
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Nome de utilizador
           </label>
           <input
@@ -37,7 +39,7 @@ export default function RecoveryScreen({ onBack }) {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Email (opcional)
           </label>
           <input

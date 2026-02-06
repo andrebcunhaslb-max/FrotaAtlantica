@@ -51,6 +51,7 @@ export default function ContentAdmin() {
     marcarPago,
     showToast,
     showConfirm,
+    isLight,
   } = useApp()
 
   const [filtroTipo, setFiltroTipo] = useState('')
@@ -402,8 +403,23 @@ export default function ContentAdmin() {
   }, [usuarios, apanhas, filtroUtilizadorApanhas, filtroDataInicioApanhas, filtroDataFimApanhas])
 
   const tableClass = 'w-full text-sm border-collapse'
-  const thClass = 'border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium'
-  const tdClass = 'border border-slate-600 px-2 py-1.5'
+  const thClass = isLight
+    ? 'border border-slate-300 bg-slate-100 px-2 py-1.5 text-left font-medium text-slate-700'
+    : 'border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium'
+  const tdClass = isLight ? 'border border-slate-200 px-2 py-1.5 text-slate-700' : 'border border-slate-600 px-2 py-1.5'
+  const wrapperClass = isLight ? 'rounded-xl border border-slate-300 bg-slate-50 overflow-x-auto' : 'rounded-xl border border-slate-600 overflow-x-auto'
+  const filterWrapperClass = isLight ? 'flex flex-wrap items-center gap-4 mb-4 p-3 rounded-xl border border-slate-300 bg-slate-50' : 'flex flex-wrap items-center gap-4 mb-4 p-3 rounded-xl border border-slate-600 bg-slate-800/50'
+  const labelClass = isLight ? 'text-xs uppercase tracking-wider text-slate-600' : 'text-xs uppercase tracking-wider text-slate-500'
+  const labelBlockClass = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600' : 'block text-xs font-medium uppercase tracking-wider text-slate-500'
+  const btnDeleteClass = isLight ? 'text-red-600 hover:text-red-700' : 'text-red-400 hover:text-red-300'
+  const btnEditClass = isLight ? 'text-sky-600 hover:text-sky-700 mr-2' : 'text-sky-400 hover:text-sky-300 mr-2'
+  const mutedTextClass = isLight ? 'text-sm text-slate-600 mb-2' : 'text-sm text-slate-500 mb-2'
+  const mutedTextClassMb4 = isLight ? 'text-sm text-slate-600 mb-4' : 'text-sm text-slate-500 mb-4'
+  const emptyTdClass = isLight ? `${tdClass} text-center text-slate-600` : `${tdClass} text-center text-slate-500`
+  const borderTrClass = isLight ? 'border-t-2 border-slate-300' : 'border-t-2 border-slate-600'
+  const btnCancelClass = isLight
+    ? 'rounded-full border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100'
+    : 'rounded-full border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30'
 
   return (
     <div className="glass-card p-5">
@@ -433,8 +449,8 @@ export default function ContentAdmin() {
       {activeSubtab === 'relatorios' && (
         <>
           <h3 className="text-base font-semibold mb-2">Registos de Vendas e Compras</h3>
-          <div className="flex flex-wrap items-center gap-4 mb-4 p-3 rounded-xl border border-slate-600 bg-slate-800/50">
-            <label className="text-xs uppercase tracking-wider text-slate-500">Tipo</label>
+          <div className={filterWrapperClass}>
+            <label className={labelClass}>Tipo</label>
             <select
               value={filtroTipo}
               onChange={(e) => setFiltroTipo(e.target.value)}
@@ -444,7 +460,7 @@ export default function ContentAdmin() {
               <option value="venda">Venda</option>
               <option value="compra">Compra</option>
             </select>
-            <label className="text-xs uppercase tracking-wider text-slate-500">Funcionário</label>
+            <label className={labelClass}>Funcionário</label>
             <select
               value={filtroFunc}
               onChange={(e) => setFiltroFunc(e.target.value)}
@@ -457,14 +473,14 @@ export default function ContentAdmin() {
                 </option>
               ))}
             </select>
-            <label className="text-xs uppercase tracking-wider text-slate-500">Data inicial</label>
+            <label className={labelClass}>Data inicial</label>
             <input
               type="date"
               value={filtroDataInicio}
               onChange={(e) => setFiltroDataInicio(e.target.value)}
               className="glass-input w-auto min-w-[120px] py-2"
             />
-            <label className="text-xs uppercase tracking-wider text-slate-500">Data final</label>
+            <label className={labelClass}>Data final</label>
             <input
               type="date"
               value={filtroDataFim}
@@ -472,7 +488,7 @@ export default function ContentAdmin() {
               className="glass-input w-auto min-w-[120px] py-2"
             />
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-600">
+          <div className={wrapperClass}>
             <table className={tableClass}>
               <thead>
                 <tr>
@@ -500,7 +516,7 @@ export default function ContentAdmin() {
                         <button
                           type="button"
                           onClick={() => handleApagarRegisto(i)}
-                          className="text-red-400 hover:text-red-300"
+                          className={btnDeleteClass}
                           aria-label="Apagar"
                         >
                           <Trash2 className="h-4 w-4 inline" />
@@ -518,7 +534,7 @@ export default function ContentAdmin() {
       {activeSubtab === 'caixa' && (
         <>
           <h3 className="text-base font-semibold mb-2">Caixa da Empresa</h3>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelBlockClass}>
             Valor total em caixa (€)
           </label>
           <input
@@ -541,7 +557,7 @@ export default function ContentAdmin() {
           <h3 className="text-base font-semibold mt-6 mb-2">Registar Movimento</h3>
           <form onSubmit={handleRegistarMovimento} className="space-y-4 max-w-md">
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Responsável
               </label>
               <select
@@ -558,7 +574,7 @@ export default function ContentAdmin() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Tipo de movimento
               </label>
               <select
@@ -571,7 +587,7 @@ export default function ContentAdmin() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Valor (€)
               </label>
               <input
@@ -584,7 +600,7 @@ export default function ContentAdmin() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Motivo
               </label>
               <input
@@ -600,7 +616,7 @@ export default function ContentAdmin() {
           </form>
 
           <h3 className="text-base font-semibold mt-6 mb-2">Movimentos de Caixa</h3>
-          <div className="overflow-x-auto rounded-xl border border-slate-600">
+          <div className={wrapperClass}>
             <table className={tableClass}>
               <thead>
                 <tr>
@@ -624,7 +640,7 @@ export default function ContentAdmin() {
                       <button
                         type="button"
                         onClick={() => handleApagarMovimento(i)}
-                        className="text-red-400 hover:text-red-300"
+                        className={btnDeleteClass}
                         aria-label="Apagar"
                       >
                         <Trash2 className="h-4 w-4 inline" />
@@ -643,7 +659,7 @@ export default function ContentAdmin() {
           <h3 className="text-base font-semibold mb-2">Adicionar Utilizador</h3>
           <form onSubmit={handleAddUser} className="space-y-4 max-w-md">
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Nome
               </label>
               <input
@@ -653,7 +669,7 @@ export default function ContentAdmin() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Cargo
               </label>
               <select
@@ -668,7 +684,7 @@ export default function ContentAdmin() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Grupo
               </label>
               <select
@@ -685,7 +701,7 @@ export default function ContentAdmin() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Nick FiveM
               </label>
               <input
@@ -696,7 +712,7 @@ export default function ContentAdmin() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 Telemóvel
               </label>
               <input
@@ -708,7 +724,7 @@ export default function ContentAdmin() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+              <label className={labelBlockClass}>
                 PIN
               </label>
               <input
@@ -727,7 +743,7 @@ export default function ContentAdmin() {
                 <button
                   type="button"
                   onClick={handleCancelarEdicao}
-                  className="rounded-full border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30"
+                  className={btnCancelClass}
                 >
                   <X className="h-4 w-4 inline mr-1" />
                   Cancelar
@@ -737,7 +753,7 @@ export default function ContentAdmin() {
           </form>
 
           <h3 className="text-base font-semibold mt-6 mb-2">Lista de Utilizadores</h3>
-          <div className="overflow-x-auto rounded-xl border border-slate-600">
+          <div className={wrapperClass}>
             <table className={tableClass}>
               <thead>
                 <tr>
@@ -763,7 +779,7 @@ export default function ContentAdmin() {
                       <button
                         type="button"
                         onClick={() => handleEditarUser(i)}
-                        className="text-sky-400 hover:text-sky-300 mr-2"
+                        className={btnEditClass}
                         aria-label="Editar"
                       >
                         <Edit className="h-4 w-4 inline" />
@@ -771,7 +787,7 @@ export default function ContentAdmin() {
                       <button
                         type="button"
                         onClick={() => handleApagarUser(i)}
-                        className="text-red-400 hover:text-red-300"
+                        className={btnDeleteClass}
                         aria-label="Apagar"
                       >
                         <Trash2 className="h-4 w-4 inline" />
@@ -788,12 +804,12 @@ export default function ContentAdmin() {
       {activeSubtab === 'metas' && (
         <>
           <h3 className="text-base font-semibold mb-2">Preços de venda (Calculadora e Compras)</h3>
-          <p className="text-sm text-slate-500 mb-2">
+          <p className={mutedTextClass}>
             Valores por peixe para vendas a outros — usados na Calculadora e no registo de Compras. Não confundir com o valor por jogador (pagamento), definido na tabela abaixo.
           </p>
           <div className="mb-4 flex flex-wrap items-end gap-4">
             <div>
-              <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Sem parceria (€/peixe)</label>
+              <label className={`${labelClass} mb-1`}>Sem parceria (€/peixe)</label>
               <input
                 type="number"
                 min={0}
@@ -805,7 +821,7 @@ export default function ContentAdmin() {
               />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Em parceria (€/peixe)</label>
+              <label className={`${labelClass} mb-1`}>Em parceria (€/peixe)</label>
               <input
                 type="number"
                 min={0}
@@ -828,13 +844,13 @@ export default function ContentAdmin() {
           </div>
 
           <h3 className="text-base font-semibold mb-2 mt-8">Metas, pagamento ao jogador e ciclos</h3>
-          <p className="text-sm text-slate-500 mb-4">
+          <p className={mutedTextClassMb4}>
             Meta semanal por utilizador e por equipa. A coluna €/peixe define quanto a administração paga por peixe a cada jogador (valor a receber = quantidade × esse valor). Marque como pago por jogador para reiniciar o ciclo.
           </p>
           <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
               <div key={g}>
-                <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1">Meta equipa {g}</label>
+                <label className={`${labelClass} mb-1`}>Meta equipa {g}</label>
                 <input
                   type="number"
                   min={0}
@@ -846,7 +862,7 @@ export default function ContentAdmin() {
               </div>
             ))}
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-600 mb-4">
+          <div className={`${wrapperClass} mb-4`}>
             <table className={tableClass}>
               <thead>
                 <tr>
@@ -896,7 +912,7 @@ export default function ContentAdmin() {
                         type="button"
                         onClick={() => handleMarcarPagoUser(u.id, u.nome)}
                         disabled={pagoSavingUserId !== null}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50"
+                        className={isLight ? 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50' : 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50'}
                       >
                         <Banknote className="h-3.5 w-3.5" />
                         {pagoSavingUserId === u.id ? 'A processar…' : 'Marcar como pago'}
@@ -933,8 +949,8 @@ export default function ContentAdmin() {
       {activeSubtab === 'apanhas' && (
         <>
           <h3 className="text-base font-semibold mb-2">Apanhas de Peixe por Utilizador</h3>
-          <div className="flex flex-wrap items-center gap-4 mb-4 p-3 rounded-xl border border-slate-600 bg-slate-800/50">
-            <label className="text-xs uppercase tracking-wider text-slate-500">Utilizador</label>
+          <div className={filterWrapperClass}>
+            <label className={labelClass}>Utilizador</label>
             <select
               value={filtroUtilizadorApanhas}
               onChange={(e) => setFiltroUtilizadorApanhas(e.target.value)}
@@ -947,14 +963,14 @@ export default function ContentAdmin() {
                 </option>
               ))}
             </select>
-            <label className="text-xs uppercase tracking-wider text-slate-500">Data inicial</label>
+            <label className={labelClass}>Data inicial</label>
             <input
               type="date"
               value={filtroDataInicioApanhas}
               onChange={(e) => setFiltroDataInicioApanhas(e.target.value)}
               className="glass-input w-auto min-w-[120px] py-2"
             />
-            <label className="text-xs uppercase tracking-wider text-slate-500">Data final</label>
+            <label className={labelClass}>Data final</label>
             <input
               type="date"
               value={filtroDataFimApanhas}
@@ -963,7 +979,7 @@ export default function ContentAdmin() {
             />
           </div>
           <h4 className="text-sm font-semibold mt-4 mb-2">Totais por Utilizador</h4>
-          <div className="overflow-x-auto rounded-xl border border-slate-600 mb-6">
+          <div className={`${wrapperClass} mb-6`}>
             <table className={tableClass}>
               <thead>
                 <tr>
@@ -974,7 +990,7 @@ export default function ContentAdmin() {
               <tbody>
                 {apanhasAdmin.length === 0 ? (
                   <tr>
-                    <td colSpan={2} className={`${tdClass} text-center text-slate-500`}>
+                    <td colSpan={2} className={emptyTdClass}>
                       Nenhuma apanha registada.
                     </td>
                   </tr>
@@ -992,7 +1008,7 @@ export default function ContentAdmin() {
             </table>
           </div>
           <h4 className="text-sm font-semibold mb-2">Registos detalhados</h4>
-          <div className="overflow-x-auto rounded-xl border border-slate-600">
+          <div className={wrapperClass}>
             <table className={tableClass}>
               <thead>
                 <tr>
@@ -1018,7 +1034,7 @@ export default function ContentAdmin() {
                   ))
                 )}
                 {apanhasAdmin.length > 0 && (
-                  <tr className="border-t-2 border-slate-600">
+                  <tr className={borderTrClass}>
                     <td className={`${tdClass} font-bold`}>Total geral</td>
                     <td className={`${tdClass} font-bold`}>
                       {apanhasAdmin.reduce((s, { total }) => s + total, 0)}

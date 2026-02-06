@@ -80,7 +80,7 @@ export default function ConfirmModal() {
         onClick={handleBackdropClick}
         aria-hidden
       />
-      <div className="glass-panel relative z-10 w-full max-w-md border-slate-600/60 p-6 shadow-2xl">
+      <div className={`glass-panel relative z-10 w-full max-w-md p-6 shadow-2xl ${isLight ? 'border-slate-200' : 'border-slate-600/60'}`}>
         <h2 id="confirm-modal-title" className={`text-lg font-semibold mb-2 ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
           {title}
         </h2>
@@ -103,7 +103,9 @@ export default function ConfirmModal() {
             disabled={loading}
             className={
               isDanger
-                ? 'rounded-full border border-red-500/70 bg-red-500/20 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-50'
+                ? isLight
+                  ? 'rounded-full border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-50'
+                  : 'rounded-full border border-red-500/70 bg-red-500/20 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-50'
                 : 'btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-50'
             }
           >

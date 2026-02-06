@@ -13,7 +13,7 @@ function formatChatTime(iso) {
 }
 
 export default function ContentChat() {
-  const { chatMessages, loadChat, sendChatMessage } = useApp()
+  const { chatMessages, loadChat, sendChatMessage, isLight } = useApp()
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const listEndRef = useRef(null)
@@ -49,28 +49,28 @@ export default function ContentChat() {
       <h2 className="text-lg font-semibold mt-0 mb-3 px-5 pt-5">Chat geral</h2>
       <div className="flex-1 overflow-y-auto px-5 space-y-3">
         {chatMessages.length === 0 && (
-          <p className="text-slate-500 text-sm py-4">Ainda não há mensagens. Envia a primeira.</p>
+          <p className={`text-sm py-4 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>Ainda não há mensagens. Envia a primeira.</p>
         )}
         {chatMessages.map((msg) => (
           <div
             key={msg.id}
-            className="rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5"
+            className={isLight ? 'rounded-xl border border-slate-300 bg-slate-50/80 px-4 py-2.5' : 'rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5'}
           >
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-slate-200">{msg.userName}</span>
+              <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{msg.userName}</span>
               {msg.cargo && (
-                <span className="text-xs rounded-full bg-slate-600/80 px-2 py-0.5 text-slate-400">
+                <span className={isLight ? 'text-xs rounded-full bg-slate-200 px-2 py-0.5 text-slate-600' : 'text-xs rounded-full bg-slate-600/80 px-2 py-0.5 text-slate-400'}>
                   {msg.cargo}
                 </span>
               )}
-              <span className="text-xs text-slate-500 ml-auto">{formatChatTime(msg.timestamp)}</span>
+              <span className={`text-xs ml-auto ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>{formatChatTime(msg.timestamp)}</span>
             </div>
-            <p className="text-sm text-slate-300 mt-1 break-words">{msg.text}</p>
+            <p className={`text-sm mt-1 break-words ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{msg.text}</p>
           </div>
         ))}
         <div ref={listEndRef} />
       </div>
-      <form onSubmit={handleSubmit} className="p-4 border-t border-slate-600 flex gap-2">
+      <form onSubmit={handleSubmit} className={`p-4 border-t flex gap-2 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
         <input
           type="text"
           value={input}

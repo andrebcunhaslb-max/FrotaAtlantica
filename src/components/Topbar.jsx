@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun, LogOut, Clock } from 'lucide-react'
+import { Moon, Sun, Clock } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function Topbar() {
-  const { user, isLight, setIsLight, logout } = useApp()
+  const { user, isLight, setIsLight } = useApp()
   const [time, setTime] = useState('00:00')
+  const headerClass = isLight
+    ? 'grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-6 py-3 shrink-0 border-b border-slate-200 bg-white/70 backdrop-blur-sm'
+    : 'grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-6 py-3 shrink-0 border-b border-slate-600/60 bg-slate-900/50 backdrop-blur-sm'
 
   useEffect(() => {
     const tick = () => {
@@ -21,7 +24,7 @@ export default function Topbar() {
   }, [])
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-5">
+    <header className={headerClass}>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -34,23 +37,20 @@ export default function Topbar() {
         </button>
       </div>
       <div className="flex items-center justify-center gap-2 text-xl font-semibold tracking-wider">
-        <Clock className="h-5 w-5 text-slate-500" aria-hidden />
+        <Clock className={`h-5 w-5 ${isLight ? 'text-slate-600' : 'text-slate-500'}`} aria-hidden />
         <span id="horaAtual">{time}</span>
       </div>
-      <div className="flex justify-end items-center gap-2">
-        <span className="rounded-full border border-slate-600 bg-slate-900/70 px-3 py-1.5 text-sm text-slate-400">
+      <div className="flex justify-end items-center">
+        <span
+          className={
+            isLight
+              ? 'rounded-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-600'
+              : 'rounded-full border border-slate-600 bg-slate-900/70 px-3 py-1.5 text-sm text-slate-400'
+          }
+        >
           {user?.nome} ({user?.cargo})
         </span>
-        <button
-          type="button"
-          onClick={logout}
-          className="rounded-full border border-slate-600 bg-slate-900/90 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800 transition inline-flex items-center gap-1"
-          aria-label="Sair"
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
       </div>
-    </div>
+    </header>
   )
 }

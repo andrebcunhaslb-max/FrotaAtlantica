@@ -13,7 +13,10 @@ function normalizeNome(s) {
 }
 
 export default function LoginScreen({ onRecoveryClick }) {
-  const { usuarios, login, showToast } = useApp()
+  const { usuarios, login, showToast, isLight } = useApp()
+  const labelClass = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600 mt-4 first:mt-0' : 'block text-xs font-medium uppercase tracking-wider text-slate-500 mt-4 first:mt-0'
+  const labelClassMt4 = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600 mt-4' : 'block text-xs font-medium uppercase tracking-wider text-slate-500 mt-4'
+  const mutedClass = isLight ? 'text-slate-600' : 'text-slate-500'
   const [username, setUsername] = useState('')
   const [pin, setPin] = useState('')
   const [scanning, setScanning] = useState(false)
@@ -79,12 +82,12 @@ export default function LoginScreen({ onRecoveryClick }) {
         <h1 className="text-3xl font-bold tracking-wider uppercase bg-gradient-to-r from-sky-400 to-sky-600 bg-clip-text text-transparent mb-1">
           Frota do Atlântico
         </h1>
-        <p className="text-slate-500 text-xs uppercase tracking-widest font-medium mt-1">
+        <p className={`${mutedClass} text-xs uppercase tracking-widest font-medium mt-1`}>
           Navegamos com Confiança
         </p>
 
         <form onSubmit={handleLogin} className="max-w-[380px] mx-auto mt-9 text-left">
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mt-4 first:mt-0">
+          <label className={labelClass}>
             Utilizador
           </label>
           <input
@@ -95,7 +98,7 @@ export default function LoginScreen({ onRecoveryClick }) {
             className="glass-input mt-2"
             autoComplete="username"
           />
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mt-4">
+          <label className={labelClassMt4}>
             PIN
           </label>
           <input
@@ -128,13 +131,13 @@ export default function LoginScreen({ onRecoveryClick }) {
               )}
               <Fingerprint className="h-16 w-16 text-sky-400 relative z-10" strokeWidth={2} />
             </div>
-            <p className="text-sm font-medium text-slate-500 tracking-wide">Toque para entrar</p>
+            <p className={`text-sm font-medium tracking-wide ${mutedClass}`}>Toque para entrar</p>
           </div>
           {onRecoveryClick && (
             <button
               type="button"
               onClick={onRecoveryClick}
-              className="mt-6 text-sm text-slate-500 hover:text-sky-400 transition"
+              className={`mt-6 text-sm hover:text-sky-400 transition ${mutedClass}`}
             >
               Esqueceu PIN?
             </button>

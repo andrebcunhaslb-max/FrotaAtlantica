@@ -13,7 +13,7 @@
     @apply min-h-screen w-full flex items-center justify-center;
   }
   html.light body {
-    @apply bg-gradient-to-b from-slate-100 to-slate-200 text-slate-900;
+    @apply bg-gradient-to-b from-slate-50 to-slate-100 text-slate-800;
   }
 
   /* Scrollbar: alinhado ao design (slate + sky, cantos arredondados) */
@@ -84,7 +84,7 @@
     @apply w-full rounded-xl border border-slate-600 bg-slate-900/60 px-4 py-3.5 text-slate-200 placeholder-slate-500 outline-none transition-all duration-300 backdrop-blur-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20;
   }
   html.light .glass-input {
-    @apply border-slate-300 bg-slate-50/80 text-slate-900 placeholder-slate-400 focus:border-sky-500;
+    @apply border-slate-300 bg-slate-50/80 text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-sky-500/25;
   }
   /* Primary button */
   .btn-primary {
@@ -126,5 +126,24 @@
     background-color: #f8fafc !important;
     border-color: #e2e8f0;
     color: #1e293b;
+  }
+  /* Table panels: theme-aware wrapper and cells */
+  .table-panel {
+    @apply rounded-xl border border-slate-600 overflow-x-auto;
+  }
+  .table-panel th {
+    @apply border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium text-slate-300;
+  }
+  .table-panel td {
+    @apply border border-slate-600 px-2 py-1.5 text-slate-200;
+  }
+  html.light .table-panel {
+    @apply border-slate-300 bg-white/80;
+  }
+  html.light .table-panel th {
+    @apply border-slate-300 bg-slate-100 text-slate-700;
+  }
+  html.light .table-panel td {
+    @apply border-slate-200 text-slate-700;
   }
 }

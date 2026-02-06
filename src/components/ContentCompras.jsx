@@ -3,7 +3,8 @@ import { Save } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentCompras() {
-  const { usuarios, registos, saveRegistos, showToast, precoPeixe } = useApp()
+  const { usuarios, registos, saveRegistos, showToast, precoPeixe, isLight } = useApp()
+  const labelClass = isLight ? 'block text-xs font-medium uppercase tracking-wider text-slate-600' : 'block text-xs font-medium uppercase tracking-wider text-slate-500'
   const [comprador, setComprador] = useState('')
   const [fornecedor, setFornecedor] = useState('')
   const [parceria, setParceria] = useState('nao')
@@ -48,7 +49,7 @@ export default function ContentCompras() {
       <h2 className="text-lg font-semibold mt-0 mb-4">Compras</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Funcionário
           </label>
           <select
@@ -65,7 +66,7 @@ export default function ContentCompras() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Fornecedor
           </label>
           <input
@@ -75,7 +76,7 @@ export default function ContentCompras() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Fornecedor é parceiro?
           </label>
           <div className="flex gap-2 mt-2 flex-wrap">
@@ -96,7 +97,7 @@ export default function ContentCompras() {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Quantidade
           </label>
           <input
@@ -108,14 +109,14 @@ export default function ContentCompras() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={labelClass}>
             Valor (€)
           </label>
           <input
             type="number"
             readOnly
             value={valor ? valor.toFixed(2) : ''}
-            className="glass-input mt-2 bg-slate-800/50"
+            className={`glass-input mt-2 ${!isLight ? 'bg-slate-800/50' : ''}`}
           />
         </div>
         <button type="submit" className="btn-primary inline-flex items-center gap-2">

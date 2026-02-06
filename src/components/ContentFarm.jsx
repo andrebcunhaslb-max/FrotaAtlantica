@@ -3,7 +3,7 @@ import { Save, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentFarm() {
-  const { user, apanhas, saveApanhas, loadData, showToast, showConfirm, precoPeixe, precoPeixePorUtilizador } = useApp()
+  const { user, apanhas, saveApanhas, loadData, showToast, showConfirm, precoPeixe, precoPeixePorUtilizador, isLight } = useApp()
   const [quantidade, setQuantidade] = useState('')
 
   const userKey = user ? String(user.id) : ''
@@ -59,11 +59,11 @@ export default function ContentFarm() {
     <div className="glass-card p-5">
       <h2 className="text-lg font-semibold mt-0 mb-4">Minhas Apanhas de Peixe</h2>
       <form onSubmit={handleGuardar} className="space-y-4">
-        <p className="text-sm text-slate-500">
+        <p className={`text-sm ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
           Valor por peixe (pagamento): <strong>{valorPorPeixe} €</strong>
         </p>
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          <label className={`block text-xs font-medium uppercase tracking-wider ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
             Quantidade de Peixes
           </label>
           <input
@@ -81,17 +81,17 @@ export default function ContentFarm() {
         </button>
       </form>
       <h3 className="text-base font-semibold mt-6 mb-2">Minhas Apanhas</h3>
-      <div className="overflow-x-auto rounded-xl border border-slate-600">
+      <div className={isLight ? 'overflow-x-auto rounded-xl border border-slate-300 bg-white/80' : 'overflow-x-auto rounded-xl border border-slate-600'}>
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium">
+              <th className={isLight ? 'border border-slate-300 bg-slate-100 px-2 py-1.5 text-left font-medium text-slate-700' : 'border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium'}>
                 Quantidade
               </th>
-              <th className="border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium">
+              <th className={isLight ? 'border border-slate-300 bg-slate-100 px-2 py-1.5 text-left font-medium text-slate-700' : 'border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium'}>
                 Data e Hora
               </th>
-              <th className="border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium">
+              <th className={isLight ? 'border border-slate-300 bg-slate-100 px-2 py-1.5 text-left font-medium text-slate-700' : 'border border-slate-600 bg-slate-800/90 px-2 py-1.5 text-left font-medium'}>
                 Ação
               </th>
             </tr>
@@ -99,22 +99,22 @@ export default function ContentFarm() {
           <tbody>
             {minhasApanhas.length === 0 ? (
               <tr>
-                <td colSpan={3} className="border border-slate-600 px-2 py-3 text-center text-slate-500">
+                <td colSpan={3} className={isLight ? 'border border-slate-200 px-2 py-3 text-center text-slate-600' : 'border border-slate-600 px-2 py-3 text-center text-slate-500'}>
                   Nenhuma apanha registada.
                 </td>
               </tr>
             ) : (
               minhasApanhas.map((a) => (
                 <tr key={a.id}>
-                  <td className="border border-slate-600 px-2 py-1.5 font-medium">{a.quantidade}</td>
-                  <td className="border border-slate-600 px-2 py-1.5">
+                  <td className={isLight ? 'border border-slate-200 px-2 py-1.5 font-medium text-slate-700' : 'border border-slate-600 px-2 py-1.5 font-medium'}>{a.quantidade}</td>
+                  <td className={isLight ? 'border border-slate-200 px-2 py-1.5 text-slate-700' : 'border border-slate-600 px-2 py-1.5'}>
                     {a.datahora ? new Date(a.datahora).toLocaleString('pt-PT') : '—'}
                   </td>
-                  <td className="border border-slate-600 px-2 py-1.5">
+                  <td className={isLight ? 'border border-slate-200 px-2 py-1.5' : 'border border-slate-600 px-2 py-1.5'}>
                     <button
                       type="button"
                       onClick={() => handleApagar(a.id)}
-                      className="text-red-400 hover:text-red-300 inline-flex items-center"
+                      className={isLight ? 'text-red-600 hover:text-red-700 inline-flex items-center' : 'text-red-400 hover:text-red-300 inline-flex items-center'}
                       aria-label="Apagar"
                     >
                       <Trash2 className="h-4 w-4" />
