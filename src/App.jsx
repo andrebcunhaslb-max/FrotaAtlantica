@@ -38,7 +38,7 @@ function AppContent() {
   const { user, authView, setAuthView } = useApp()
   return (
     <main
-        className={`glass-panel flex flex-col overflow-hidden shrink-0 ${!user ? 'w-full max-w-[420px] max-h-[85vh]' : 'w-[80vw] h-[80vh] max-w-[1600px] max-h-[90vh]'}`}
+        className={`glass-panel flex flex-col overflow-hidden shrink-0 ${!user ? 'w-[calc(100%-2rem)] max-w-[420px] max-h-[90vh] sm:max-h-[85vh]' : 'w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[80vw] h-[85vh] sm:h-[80vh] max-w-[1600px] max-h-[90vh]'}`}
         id="main-content"
         aria-label="Conteúdo principal"
       >

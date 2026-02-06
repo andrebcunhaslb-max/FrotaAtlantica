@@ -21,8 +21,8 @@ export default function RecoveryScreen({ onBack }) {
   }
 
   return (
-    <div className="py-14 px-8 text-center max-w-md mx-auto">
-      <h2 className="text-xl font-semibold mb-2">Recuperação de PIN</h2>
+    <div className="py-6 px-4 sm:py-10 sm:px-6 lg:py-14 lg:px-8 text-center max-w-md mx-auto min-h-0 overflow-y-auto">
+      <h2 className="text-lg sm:text-xl font-semibold mb-2">Recuperação de PIN</h2>
       <p className={`${mutedClass} text-sm mb-6`}>
         Indique o seu nome de utilizador. Se existir conta associada, enviaremos instruções.
       </p>
