@@ -110,6 +110,23 @@ app.get('/api/valor-receber', async (req, res) => {
   }
 });
 
+app.get('/api/armazem-patrao', async (req, res) => {
+  try {
+    const data = await readJson('armazemPatrao');
+    const list = Array.isArray(data) ? data : [];
+    const normalized = list.map((r) => {
+      const tipo = r?.tipo === 'saida' ? 'saida' : 'entrada';
+      if (r?.itens && Array.isArray(r.itens)) return { ...r, tipo };
+      if (r?.nome != null) return { id: r.id, dataRegisto: r.dataRegisto, registadoPor: r.registadoPor, tipo, itens: [{ nome: r.nome, quantidade: r.quantidade ?? 0 }] };
+      return { ...r, tipo };
+    });
+    res.json(normalized);
+  } catch (err) {
+    console.error(err);
+    res.json([]);
+  }
+});
+
 const PRECO_PEIXE_DEFAULT = { sem: 36, parceria: 38 };
 app.get('/api/preco-peixe', async (req, res) => {
   try {
@@ -159,6 +176,89 @@ app.post('/api/preco-peixe', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao guardar preços do peixe' });
+  }
+});
+
+const PRECO_PLASTICO_DEFAULT = { sem: 3, parceria: 38 };
+app.get('/api/preco-plastico', async (req, res) => {
+  try {
+    const data = await readJson('precoPlastico');
+    const sem = typeof data?.sem === 'number' ? data.sem : PRECO_PLASTICO_DEFAULT.sem;
+    const parceria = typeof data?.parceria === 'number' ? data.parceria : PRECO_PLASTICO_DEFAULT.parceria;
+    const raw = data?.porUtilizador && typeof data.porUtilizador === 'object' ? data.porUtilizador : {};
+    const porUtilizador = {};
+    for (const [uid, val] of Object.entries(raw)) {
+      if (typeof val === 'number' && !Number.isNaN(val) && val >= 0) {
+        porUtilizador[uid] = val;
+      } else if (val && typeof val === 'object' && typeof val.sem === 'number') {
+        porUtilizador[uid] = val.sem;
+      }
+    }
+    res.json({ sem, parceria, porUtilizador });
+  } catch (err) {
+    console.error(err);
+    res.json({ ...PRECO_PLASTICO_DEFAULT, porUtilizador: {} });
+  }
+});
+
+app.post('/api/preco-plastico', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body !== 'object') {
+      return res.status(400).json({ error: 'Corpo deve ser um objeto { sem?, parceria?, porUtilizador? }' });
+    }
+    const existing = await readJson('precoPlastico');
+    const sem = body.sem != null ? (typeof body.sem === 'number' ? body.sem : Number(body.sem)) : (typeof existing?.sem === 'number' ? existing.sem : PRECO_PLASTICO_DEFAULT.sem);
+    const parceria = body.parceria != null ? (typeof body.parceria === 'number' ? body.parceria : Number(body.parceria)) : (typeof existing?.parceria === 'number' ? existing.parceria : PRECO_PLASTICO_DEFAULT.parceria);
+    if (Number.isNaN(sem) || Number.isNaN(parceria) || sem < 0 || parceria < 0) {
+      return res.status(400).json({ error: 'sem e parceria devem ser números não negativos' });
+    }
+    let porUtilizador = existing?.porUtilizador && typeof existing.porUtilizador === 'object' ? { ...existing.porUtilizador } : {};
+    if (body.porUtilizador != null && typeof body.porUtilizador === 'object') {
+      porUtilizador = {};
+      for (const [uid, val] of Object.entries(body.porUtilizador)) {
+        const num = typeof val === 'number' ? val : Number(val);
+        if (!Number.isNaN(num) && num >= 0) {
+          porUtilizador[uid] = num;
+        }
+      }
+    }
+    await writeJson('precoPlastico', { sem, parceria, porUtilizador });
+    res.json({ ok: true, sem, parceria, porUtilizador });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar preços do plástico' });
+  }
+});
+
+app.get('/api/apanhas-plastico', async (req, res) => {
+  try {
+    const data = await readJson('apanhasPlastico');
+    res.json(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler apanhas de plástico' });
+  }
+});
+
+app.post('/api/apanhas-plastico', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!Array.isArray(body)) {
+      return res.status(400).json({ error: 'Corpo deve ser um array' });
+    }
+    const now = new Date().toISOString();
+    const out = body.map((item) => ({
+      ...item,
+      id: item.id ?? Date.now() + Math.random(),
+      datahora: item.datahora ?? now,
+      tipo: item.tipo === 'parceria' ? 'parceria' : 'sem'
+    }));
+    await writeJson('apanhasPlastico', out);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar apanhas de plástico' });
   }
 });
 
@@ -216,6 +316,81 @@ app.post('/api/ciclo-pagamento/pagar', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao marcar pagamento' });
+  }
+});
+
+app.get('/api/ciclo-pagamento-plastico', async (req, res) => {
+  try {
+    const data = await readJson('cicloPagamentoPlastico');
+    const defaultCicloInicio = startOfCurrentWeekISO();
+    let cicloInicio = data && typeof data.cicloInicio === 'string' ? data.cicloInicio : defaultCicloInicio;
+    let porUtilizador = data && data.porUtilizador && typeof data.porUtilizador === 'object' ? data.porUtilizador : {};
+    const noUserCycles = !porUtilizador || Object.keys(porUtilizador).length === 0;
+    const cicloDate = new Date(cicloInicio);
+    const now = new Date();
+    const sameDay = cicloDate.getUTCDate() === now.getUTCDate() && cicloDate.getUTCMonth() === now.getUTCMonth() && cicloDate.getUTCFullYear() === now.getUTCFullYear();
+    if (data && noUserCycles && sameDay && cicloDate.getTime() > now.getTime() - 24 * 60 * 60 * 1000) {
+      cicloInicio = defaultCicloInicio;
+      await writeJson('cicloPagamentoPlastico', { cicloInicio, porUtilizador: {} });
+    } else if (!data || typeof data.cicloInicio !== 'string') {
+      await writeJson('cicloPagamentoPlastico', { cicloInicio, porUtilizador: porUtilizador && Object.keys(porUtilizador).length ? porUtilizador : {} });
+    }
+    res.json({ cicloInicio, porUtilizador });
+  } catch (err) {
+    console.error(err);
+    res.json({ cicloInicio: startOfCurrentWeekISO(), porUtilizador: {} });
+  }
+});
+
+app.post('/api/ciclo-pagamento-plastico/pagar', async (req, res) => {
+  try {
+    const body = req.body;
+    const userId = body != null && body.userId != null ? String(body.userId) : null;
+    if (!userId) {
+      return res.status(400).json({ error: 'Corpo deve ter userId' });
+    }
+    const now = new Date().toISOString();
+    const aprovadoPor = body != null && body.aprovadoPor != null ? String(body.aprovadoPor).trim() || null : null;
+    const valor = body != null && body.valor != null && !Number.isNaN(Number(body.valor)) ? Number(body.valor) : null;
+    let data = await readJson('cicloPagamentoPlastico');
+    const cicloInicio = data && typeof data.cicloInicio === 'string' ? data.cicloInicio : now;
+    let porUtilizador = data && data.porUtilizador && typeof data.porUtilizador === 'object' ? { ...data.porUtilizador } : {};
+    porUtilizador[userId] = { data: now, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined };
+    await writeJson('cicloPagamentoPlastico', { cicloInicio, porUtilizador });
+
+    const metasList = await readJson('metasPlastico');
+    const metasArray = Array.isArray(metasList) ? metasList : [];
+    const metasFiltered = metasArray.filter((m) => String(m.userId) !== userId);
+    await writeJson('metasPlastico', metasFiltered);
+
+    res.json({ ok: true, porUtilizador });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao marcar pagamento de plástico' });
+  }
+});
+
+app.get('/api/metas-plastico', async (req, res) => {
+  try {
+    const data = await readJson('metasPlastico');
+    res.json(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler metas de plástico' });
+  }
+});
+
+app.post('/api/metas-plastico', async (req, res) => {
+  try {
+    const body = req.body;
+    if (!Array.isArray(body)) {
+      return res.status(400).json({ error: 'Corpo deve ser um array' });
+    }
+    await writeJson('metasPlastico', body);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar metas de plástico' });
   }
 });
 
@@ -367,6 +542,55 @@ app.post('/api/metas', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao guardar metas' });
+  }
+});
+
+app.post('/api/armazem-patrao', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body !== 'object') {
+      return res.status(400).json({ error: 'Corpo deve ser um objeto { itens: [{ nome, quantidade }], registadoPor? }' });
+    }
+    const rawItens = Array.isArray(body.itens) ? body.itens : [];
+    const itens = [];
+    for (const it of rawItens) {
+      const nome = it?.nome != null ? String(it.nome).trim() : '';
+      if (!nome) continue;
+      const quantidade = it?.quantidade != null ? Number(it.quantidade) : 0;
+      if (Number.isNaN(quantidade) || quantidade < 0) continue;
+      itens.push({ nome, quantidade });
+    }
+    if (itens.length === 0) return res.status(400).json({ error: 'Deve incluir pelo menos um item válido (nome e quantidade)' });
+    const registadoPor = body.registadoPor != null ? String(body.registadoPor).trim() || null : null;
+    const tipoRaw = body.tipo != null ? String(body.tipo).toLowerCase().trim() : 'entrada';
+    const tipo = tipoRaw === 'saida' ? 'saida' : 'entrada';
+    const now = new Date().toISOString();
+    const id = Date.now();
+    const registo = { id, dataRegisto: now, registadoPor: registadoPor || undefined, tipo, itens };
+    let list = await readJson('armazemPatrao');
+    if (!Array.isArray(list)) list = [];
+    list = [...list, registo];
+    await writeJson('armazemPatrao', list);
+    res.json({ ok: true, registo });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar registo do armazém' });
+  }
+});
+
+app.delete('/api/armazem-patrao', async (req, res) => {
+  try {
+    const body = req.body;
+    const id = body?.id != null ? body.id : null;
+    if (id == null) return res.status(400).json({ error: 'Corpo deve ter id' });
+    let list = await readJson('armazemPatrao');
+    if (!Array.isArray(list)) list = [];
+    list = list.filter((r) => String(r.id) !== String(id));
+    await writeJson('armazemPatrao', list);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao apagar registo' });
   }
 });
 

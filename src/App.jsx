@@ -9,14 +9,13 @@ import ContentCalc from './components/ContentCalc'
 import ContentVendas from './components/ContentVendas'
 import ContentCompras from './components/ContentCompras'
 import ContentFarm from './components/ContentFarm'
-import ContentChat from './components/ContentChat'
-import ContentEquipa from './components/ContentEquipa'
+import ContentChatUnified from './components/ContentChatUnified'
 import ContentAdmin from './components/ContentAdmin'
 import ContentDashboard from './components/ContentDashboard'
 import FiveMSidebar from './components/FiveMSidebar'
 
 function MainLayout() {
-  const { user, activeTab, activeEquipaGrupo } = useApp()
+  const { user, activeTab } = useApp()
   if (!user) return null
   return (
     <div className="flex flex-1 min-h-0 min-w-0">
@@ -27,8 +26,7 @@ function MainLayout() {
         {activeTab === 'vendas' && <ContentVendas />}
         {activeTab === 'compras' && <ContentCompras />}
         {activeTab === 'farm' && <ContentFarm />}
-        {activeTab === 'chat' && <ContentChat />}
-        {activeTab === 'equipa' && <ContentEquipa grupo={activeEquipaGrupo || user.grupo} />}
+        {activeTab === 'chat' && <ContentChatUnified />}
         {activeTab === 'admin' && <ContentAdmin />}
       </div>
       <FiveMSidebar />

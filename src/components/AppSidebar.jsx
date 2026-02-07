@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Users, Settings, LayoutDashboard, LogOut } from 'lucide-react'
+import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Settings, LayoutDashboard, LogOut } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const SIDEBAR_ITEMS = [
@@ -32,16 +32,8 @@ export default function AppSidebar() {
     user?.cargo === 'direcao' || user?.cargo === 'gestor' || user?.cargo === 'supervisor'
 
   const userGrupo = (user?.grupo || '').trim()
-  const isDirecaoGestor = user?.cargo === 'direcao' || user?.cargo === 'gestor'
-  const showEquipa = userGrupo || isDirecaoGestor
   const baseItems = SIDEBAR_ITEMS.filter((t) => t.id !== 'admin' || showAdmin)
-  const items = showEquipa
-    ? [
-        ...baseItems.slice(0, baseItems.findIndex((t) => t.id === 'chat') + 1),
-        { id: 'equipa', label: userGrupo ? `Equipa ${userGrupo}` : 'Equipa', Icon: Users },
-        ...baseItems.slice(baseItems.findIndex((t) => t.id === 'chat') + 1),
-      ]
-    : baseItems
+  const items = baseItems
 
   useEffect(() => {
     if (!sidebarOpen) return
@@ -63,7 +55,7 @@ export default function AppSidebar() {
         {items.map(({ id, label, Icon }) => {
           const isActive = activeTab === id
           const grupoForBadge = userGrupo || activeEquipaGrupo
-          const showComunicadoBadge = id === 'equipa' && grupoForBadge && hasUnreadComunicados?.(grupoForBadge)
+          const showComunicadoBadge = id === 'chat' && grupoForBadge && hasUnreadComunicados?.(grupoForBadge)
           return (
             <button
               key={id}

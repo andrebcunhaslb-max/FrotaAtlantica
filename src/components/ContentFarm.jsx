@@ -1,34 +1,47 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Save, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function ContentFarm() {
-  const { user, apanhas, saveApanhas, loadData, showToast, showConfirm, precoPeixe, precoPeixePorUtilizador, isLight } = useApp()
+  const { user, apanhas, saveApanhas, apanhasPlastico, saveApanhasPlastico, loadData, showToast, showConfirm, precoPeixe, precoPeixePorUtilizador, precoPlastico, precoPlasticoPorUtilizador, isLight } = useApp()
+  const [material, setMaterial] = useState('peixe') // peixe | plastico
   const [quantidade, setQuantidade] = useState('')
 
   const userKey = user ? String(user.id) : ''
-  const valorPorPeixe = (userKey && typeof precoPeixePorUtilizador?.[userKey] === 'number')
-    ? precoPeixePorUtilizador[userKey]
-    : (precoPeixe?.sem ?? 36)
+  const isPeixe = material === 'peixe'
+  const apanhasAtual = isPeixe ? (apanhas || []) : (apanhasPlastico || [])
+  const saveApanhasAtual = isPeixe ? saveApanhas : saveApanhasPlastico
 
-  const minhasApanhas = (apanhas || [])
+  const valorPorUnidade = isPeixe
+    ? ((userKey && typeof precoPeixePorUtilizador?.[userKey] === 'number')
+        ? precoPeixePorUtilizador[userKey]
+        : (precoPeixe?.sem ?? 36))
+    : ((userKey && typeof precoPlasticoPorUtilizador?.[userKey] === 'number')
+        ? precoPlasticoPorUtilizador[userKey]
+        : (precoPlastico?.sem ?? 3))
+
+  const minhasApanhas = apanhasAtual
     .filter((a) => Number(a.user_id) === Number(user?.id))
     .sort((a, b) => new Date(b.datahora || 0) - new Date(a.datahora || 0))
+
+  const materialLabel = isPeixe ? 'peixe' : 'plástico'
+  const titulo = isPeixe ? 'Minhas Apanhas de Peixe' : 'Minhas Apanhas de Plástico'
+  const qtdLabel = isPeixe ? 'Quantidade de Peixes' : 'Quantidade de Plástico'
 
   const handleGuardar = async (e) => {
     e.preventDefault()
     const q = quantidade.trim()
     if (!q || Number(q) <= 0) {
-      showToast('Informe uma quantidade de peixes válida.', 'error')
+      showToast(`Informe uma quantidade de ${materialLabel} válida.`, 'error')
       return
     }
     if (!user) {
       showToast('Utilizador não identificado.', 'error')
       return
     }
-    const todas = [...(apanhas || []), { user_id: user.id, quantidade: Number(q) }]
+    const todas = [...apanhasAtual, { user_id: user.id, quantidade: Number(q) }]
     try {
-      await saveApanhas(todas)
+      await saveApanhasAtual(todas)
       setQuantidade('')
       await loadData()
       showToast('Apanha registada com sucesso!', 'success')
@@ -43,9 +56,9 @@ export default function ContentFarm() {
       message: 'Tem certeza que deseja apagar este registo?',
       variant: 'danger',
       onConfirm: async () => {
-        const filtradas = (apanhas || []).filter((a) => a.id !== id && String(a.id) !== String(id))
+        const filtradas = apanhasAtual.filter((a) => a.id !== id && String(a.id) !== String(id))
         try {
-          await saveApanhas(filtradas)
+          await saveApanhasAtual(filtradas)
           await loadData()
           showToast('Apanha removida.', 'success')
         } catch {
@@ -57,14 +70,33 @@ export default function ContentFarm() {
 
   return (
     <div className="glass-card p-5">
-      <h2 className="text-lg font-semibold mt-0 mb-4">Minhas Apanhas de Peixe</h2>
+      <h2 className="text-lg font-semibold mt-0 mb-4">{titulo}</h2>
+      <label className={`block text-xs font-medium uppercase tracking-wider ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
+        Material
+      </label>
+      <div className="flex gap-2 mt-2 mb-4 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setMaterial('peixe')}
+          className={`pill ${material === 'peixe' ? 'pill-active' : ''}`}
+        >
+          Peixe
+        </button>
+        <button
+          type="button"
+          onClick={() => setMaterial('plastico')}
+          className={`pill ${material === 'plastico' ? 'pill-active' : ''}`}
+        >
+          Plástico
+        </button>
+      </div>
       <form onSubmit={handleGuardar} className="space-y-4">
         <p className={`text-sm ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
-          Valor por peixe (pagamento): <strong>{valorPorPeixe} €</strong>
+          Valor por {materialLabel} (pagamento): <strong>{valorPorUnidade} €</strong>
         </p>
         <div>
           <label className={`block text-xs font-medium uppercase tracking-wider ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
-            Quantidade de Peixes
+            {qtdLabel}
           </label>
           <input
             type="number"
@@ -80,7 +112,7 @@ export default function ContentFarm() {
           Registar Apanha
         </button>
       </form>
-      <h3 className="text-base font-semibold mt-6 mb-2">Minhas Apanhas</h3>
+      <h3 className="text-base font-semibold mt-6 mb-2">Minhas Apanhas de {isPeixe ? 'Peixe' : 'Plástico'}</h3>
       {minhasApanhas.length === 0 ? (
         <p className={isLight ? 'text-slate-600 text-sm py-3' : 'text-slate-500 text-sm py-3'}>Nenhuma apanha registada.</p>
       ) : (

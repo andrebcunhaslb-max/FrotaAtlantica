@@ -8,16 +8,20 @@ import {
   UserPlus,
   X,
   Banknote,
+  Eye,
+  Plus,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import DatePicker from './DatePicker'
 
 const SUBTABS = [
   { id: 'relatorios', label: 'Relatórios' },
   { id: 'caixa', label: 'Caixa' },
-  { id: 'apanhas', label: 'Apanhas de Peixe' },
+  { id: 'farm', label: 'Farm' },
   { id: 'utilizadores', label: 'Utilizadores' },
   { id: 'metas', label: 'Metas e Valor a Receber' },
   { id: 'pagamentos', label: 'Histórico de Pagamentos' },
+  { id: 'armazem', label: 'Armazém Patrão', direcaoGestorOnly: true },
 ]
 
 function parseDataRegisto(str) {
@@ -37,13 +41,19 @@ export default function ContentAdmin() {
     caixa,
     movimentos,
     apanhas,
+    apanhasPlastico,
     metas,
     valorReceber,
     precoPeixe,
     precoPeixePorUtilizador,
     savePrecoPeixe,
+    precoPlastico,
+    precoPlasticoPorUtilizador,
+    savePrecoPlastico,
     cicloInicio,
     cicloPorUtilizador,
+    cicloPlasticoPorUtilizador,
+    marcarPagoPlastico,
     loadData,
     saveRegistos,
     saveCaixa,
@@ -52,6 +62,9 @@ export default function ContentAdmin() {
     saveMetas,
     saveValorReceber,
     marcarPago,
+    armazemPatrao,
+    saveArmazemPatraoRegisto,
+    deleteArmazemPatraoRegisto,
     showToast,
     showConfirm,
     isLight,
@@ -73,9 +86,10 @@ export default function ContentAdmin() {
   const [userTelemovel, setUserTelemovel] = useState('')
   const [userPin, setUserPin] = useState('')
   const [editingUserIndex, setEditingUserIndex] = useState(null)
-  const [filtroUtilizadorApanhas, setFiltroUtilizadorApanhas] = useState('')
-  const [filtroDataInicioApanhas, setFiltroDataInicioApanhas] = useState('')
-  const [filtroDataFimApanhas, setFiltroDataFimApanhas] = useState('')
+  const [farmTipo, setFarmTipo] = useState('peixe')
+  const [filtroUtilizadorFarm, setFiltroUtilizadorFarm] = useState('')
+  const [filtroDataInicioFarm, setFiltroDataInicioFarm] = useState('')
+  const [filtroDataFimFarm, setFiltroDataFimFarm] = useState('')
   const [metasPorUser, setMetasPorUser] = useState({})
   const [valorReceberPorUser, setValorReceberPorUser] = useState({})
   const [metaPorGrupo, setMetaPorGrupo] = useState({})
@@ -83,9 +97,14 @@ export default function ContentAdmin() {
   const [precoSemInput, setPrecoSemInput] = useState('')
   const [precoParceriaInput, setPrecoParceriaInput] = useState('')
   const [precoPeixeSaving, setPrecoPeixeSaving] = useState(false)
-  const [precoPorUserEdit, setPrecoPorUserEdit] = useState({}) // { [userId]: { sem: string, parceria: string } }
+  const [precoPlasticoSemInput, setPrecoPlasticoSemInput] = useState('')
+  const [precoPlasticoParceriaInput, setPrecoPlasticoParceriaInput] = useState('')
+  const [precoPlasticoSaving, setPrecoPlasticoSaving] = useState(false)
+  const [precoPorUserEdit, setPrecoPorUserEdit] = useState({}) // { [userId]: string }
   const [precoPorUserSaving, setPrecoPorUserSaving] = useState(false)
   const [pagoSavingUserId, setPagoSavingUserId] = useState(null)
+  const [precoPorUserEditPlastico, setPrecoPorUserEditPlastico] = useState({})
+  const [precoPorUserSavingPlastico, setPrecoPorUserSavingPlastico] = useState(false)
   const [filtroPagUtilizador, setFiltroPagUtilizador] = useState('')
   const [filtroPagDataInicio, setFiltroPagDataInicio] = useState('')
   const [filtroPagDataFim, setFiltroPagDataFim] = useState('')
@@ -93,6 +112,14 @@ export default function ContentAdmin() {
   const [filtroPagValorMax, setFiltroPagValorMax] = useState('')
   const [filtroPagAprovadoPor, setFiltroPagAprovadoPor] = useState('')
   const [showUserFormModal, setShowUserFormModal] = useState(false)
+  const [armazemNome, setArmazemNome] = useState('')
+  const [armazemQuantidade, setArmazemQuantidade] = useState('')
+  const [armazemItemsToSave, setArmazemItemsToSave] = useState([])
+  const [armazemSaving, setArmazemSaving] = useState(false)
+  const [previewArmazemItem, setPreviewArmazemItem] = useState(null)
+  const [filtroArmazemData, setFiltroArmazemData] = useState('')
+  const [armazemTipo, setArmazemTipo] = useState('entrada')
+  const [armazemRegistosDoDia, setArmazemRegistosDoDia] = useState([])
 
   const closeUserFormModal = useCallback(() => {
     setShowUserFormModal(false)
@@ -110,6 +137,22 @@ export default function ContentAdmin() {
   }, [activeSubtab, caixa])
 
   useEffect(() => {
+    if (activeSubtab !== 'armazem' || !filtroArmazemData) {
+      if (!filtroArmazemData) setArmazemRegistosDoDia([])
+      return
+    }
+    const targetDate = filtroArmazemData
+    const registosOrdenados = [...(armazemPatrao || [])].sort(
+      (a, b) => new Date(b.dataRegisto || 0) - new Date(a.dataRegisto || 0)
+    )
+    const doDia = registosOrdenados.filter((r) => {
+      const d = r.dataRegisto ? new Date(r.dataRegisto).toISOString().slice(0, 10) : ''
+      return d === targetDate
+    })
+    setArmazemRegistosDoDia(doDia)
+  }, [activeSubtab, filtroArmazemData, armazemPatrao])
+
+  useEffect(() => {
     if (activeSubtab !== 'metas') return
     const userMetas = {}
     const groupMetas = {}
@@ -122,6 +165,8 @@ export default function ContentAdmin() {
     setValorReceberPorUser(typeof valorReceber === 'object' && valorReceber && !Array.isArray(valorReceber) ? { ...valorReceber } : {})
     setPrecoSemInput(precoPeixe?.sem != null ? String(precoPeixe.sem) : '36')
     setPrecoParceriaInput(precoPeixe?.parceria != null ? String(precoPeixe.parceria) : '38')
+    setPrecoPlasticoSemInput(precoPlastico?.sem != null ? String(precoPlastico.sem) : '3')
+    setPrecoPlasticoParceriaInput(precoPlastico?.parceria != null ? String(precoPlastico.parceria) : '38')
     const edit = {}
     for (const u of usuarios || []) {
       const id = String(u.id)
@@ -130,7 +175,15 @@ export default function ContentAdmin() {
       edit[id] = String(num)
     }
     setPrecoPorUserEdit(edit)
-  }, [activeSubtab, metas, valorReceber, precoPeixe, precoPeixePorUtilizador, usuarios])
+    const editPlastico = {}
+    for (const u of usuarios || []) {
+      const id = String(u.id)
+      const val = precoPlasticoPorUtilizador?.[id]
+      const num = typeof val === 'number' ? val : (precoPlastico?.sem != null ? precoPlastico.sem : 3)
+      editPlastico[id] = String(num)
+    }
+    setPrecoPorUserEditPlastico(editPlastico)
+  }, [activeSubtab, metas, valorReceber, precoPeixe, precoPeixePorUtilizador, precoPlastico, precoPlasticoPorUtilizador, usuarios])
 
   const registosFiltrados = useMemo(() => {
     return (registos || []).filter((r) => {
@@ -327,6 +380,49 @@ export default function ContentAdmin() {
     }
   }
 
+  const handleAdicionarArmazemItem = (e) => {
+    e?.preventDefault()
+    const nome = armazemNome.trim()
+    const quantidade = Number(armazemQuantidade)
+    if (!nome) {
+      showToast('Preencha o nome do item.', 'error')
+      return
+    }
+    if (Number.isNaN(quantidade) || quantidade < 0) {
+      showToast('Quantidade inválida.', 'error')
+      return
+    }
+    setArmazemItemsToSave((prev) => [...prev, { nome, quantidade }])
+    setArmazemNome('')
+    setArmazemQuantidade('')
+  }
+
+  const handleRemoverArmazemItemDaLista = (index) => {
+    setArmazemItemsToSave((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleGuardarArmazem = async (e) => {
+    e?.preventDefault()
+    if (armazemItemsToSave.length === 0) {
+      showToast('Adicione pelo menos um item antes de guardar.', 'error')
+      return
+    }
+    setArmazemSaving(true)
+    try {
+      await saveArmazemPatraoRegisto({
+        itens: armazemItemsToSave,
+        registadoPor: user?.nome || null,
+        tipo: armazemTipo
+      })
+      setArmazemItemsToSave([])
+      showToast('Registo guardado no armazém.', 'success')
+    } catch {
+      showToast('Erro ao guardar no servidor.', 'error')
+    } finally {
+      setArmazemSaving(false)
+    }
+  }
+
   const handleGuardarPrecoPeixe = async () => {
     const sem = Number(precoSemInput)
     const parceria = Number(precoParceriaInput)
@@ -342,6 +438,24 @@ export default function ContentAdmin() {
       showToast('Erro ao guardar no servidor.', 'error')
     } finally {
       setPrecoPeixeSaving(false)
+    }
+  }
+
+  const handleGuardarPrecoPlastico = async () => {
+    const sem = Number(precoPlasticoSemInput)
+    const parceria = Number(precoPlasticoParceriaInput)
+    if (Number.isNaN(sem) || Number.isNaN(parceria) || sem < 0 || parceria < 0) {
+      showToast('Valores do plástico inválidos.', 'error')
+      return
+    }
+    setPrecoPlasticoSaving(true)
+    try {
+      await savePrecoPlastico({ sem, parceria })
+      showToast('Preços do plástico guardados.', 'success')
+    } catch {
+      showToast('Erro ao guardar no servidor.', 'error')
+    } finally {
+      setPrecoPlasticoSaving(false)
     }
   }
 
@@ -373,6 +487,34 @@ export default function ContentAdmin() {
     return out
   }, [usuarios, apanhas, cicloInicio, cicloPorUtilizador, precoPeixe, precoPeixePorUtilizador])
 
+  const valorReceberPlasticoCalculadoPorUser = useMemo(() => {
+    const globalPreco = Number(precoPlastico?.sem) || 3
+    const out = {}
+    const list = apanhasPlastico || []
+    for (const u of usuarios || []) {
+      const id = u.id
+      const idKey = String(id)
+      const precoPorUnidade = typeof precoPlasticoPorUtilizador?.[idKey] === 'number' ? precoPlasticoPorUtilizador[idKey] : globalPreco
+      const entry = cicloPlasticoPorUtilizador?.[idKey]
+      const cicloStr = typeof entry === 'string' ? entry : (entry?.data ?? null)
+      const cicloStrResolved = cicloStr ?? cicloInicio
+      if (!cicloStrResolved) {
+        out[id] = 0
+        continue
+      }
+      const cicloStart = new Date(cicloStrResolved)
+      const total = list.reduce((acc, a) => {
+        if (String(a.user_id) !== idKey) return acc
+        const d = a.datahora ? new Date(a.datahora) : null
+        if (!d || d < cicloStart) return acc
+        const quantidade = Number(a.quantidade) || 0
+        return acc + quantidade * precoPorUnidade
+      }, 0)
+      out[id] = total
+    }
+    return out
+  }, [usuarios, apanhasPlastico, cicloInicio, cicloPlasticoPorUtilizador, precoPlastico, precoPlasticoPorUtilizador])
+
   const handleGuardarPrecoPorJogador = async () => {
     const porUtilizador = {}
     for (const [uid, val] of Object.entries(precoPorUserEdit)) {
@@ -396,17 +538,21 @@ export default function ContentAdmin() {
     }
   }
 
-  const handleMarcarPagoUser = (userId, nome, valor) => {
+  const handleMarcarPagoUser = (userId, nome, valorTotal) => {
     showConfirm({
       title: 'Confirmar pagamento',
-      message: `Marcar ${nome || 'este utilizador'} como pago? O ciclo deste jogador será reiniciado e a meta removida.`,
+      message: `Marcar ${nome || 'este utilizador'} como pago (peixe e plástico)? O ciclo deste jogador será reiniciado e a meta removida.`,
       variant: 'default',
       onConfirm: async () => {
         setPagoSavingUserId(userId)
         try {
           await marcarPago(userId, {
             aprovadoPor: user?.nome || null,
-            valor: valor != null ? valor : null
+            valor: valorTotal != null ? valorTotal : null
+          })
+          await marcarPagoPlastico(userId, {
+            aprovadoPor: user?.nome || null,
+            valor: valorTotal != null ? valorTotal : null
           })
           await loadData()
           showToast('Pagamento marcado como efetuado para este jogador.', 'success')
@@ -419,21 +565,46 @@ export default function ContentAdmin() {
     })
   }
 
-  const apanhasAdmin = useMemo(() => {
-    const users = filtroUtilizadorApanhas
-      ? usuarios.filter((u) => String(u.id) === String(filtroUtilizadorApanhas))
+  const handleGuardarPrecoPorJogadorPlastico = async () => {
+    const porUtilizador = {}
+    for (const [uid, val] of Object.entries(precoPorUserEditPlastico)) {
+      const num = Number(val)
+      if (!Number.isNaN(num) && num >= 0) {
+        porUtilizador[uid] = num
+      }
+    }
+    setPrecoPorUserSavingPlastico(true)
+    try {
+      await savePrecoPlastico({
+        sem: precoPlastico?.sem ?? 3,
+        parceria: precoPlastico?.parceria ?? 38,
+        porUtilizador
+      })
+      showToast('Valor por plástico (pagamento ao jogador) guardado.', 'success')
+    } catch {
+      showToast('Erro ao guardar no servidor.', 'error')
+    } finally {
+      setPrecoPorUserSavingPlastico(false)
+    }
+  }
+
+  const apanhasFarmAdmin = useMemo(() => {
+    const isPeixe = farmTipo === 'peixe'
+    const list = isPeixe ? (apanhas || []) : (apanhasPlastico || [])
+    const users = filtroUtilizadorFarm
+      ? usuarios.filter((u) => String(u.id) === String(filtroUtilizadorFarm))
       : usuarios
     const result = []
     for (const u of users) {
-      const list = (apanhas || []).filter((a) => Number(a.user_id) === Number(u.id))
-      let filtered = list
-      if (filtroDataInicioApanhas || filtroDataFimApanhas) {
-        filtered = list.filter((a) => {
+      const userList = list.filter((a) => Number(a.user_id) === Number(u.id))
+      let filtered = userList
+      if (filtroDataInicioFarm || filtroDataFimFarm) {
+        filtered = userList.filter((a) => {
           const d = a.datahora ? new Date(a.datahora) : null
           if (!d) return true
-          if (filtroDataInicioApanhas && d < new Date(filtroDataInicioApanhas + 'T00:00:00'))
+          if (filtroDataInicioFarm && d < new Date(filtroDataInicioFarm + 'T00:00:00'))
             return false
-          if (filtroDataFimApanhas && d > new Date(filtroDataFimApanhas + 'T23:59:59')) return false
+          if (filtroDataFimFarm && d > new Date(filtroDataFimFarm + 'T23:59:59')) return false
           return true
         })
       }
@@ -441,7 +612,7 @@ export default function ContentAdmin() {
       result.push({ user: u, total, list: filtered.sort((a, b) => new Date(b.datahora || 0) - new Date(a.datahora || 0)) })
     }
     return result.sort((a, b) => b.total - a.total)
-  }, [usuarios, apanhas, filtroUtilizadorApanhas, filtroDataInicioApanhas, filtroDataFimApanhas])
+  }, [usuarios, apanhas, apanhasPlastico, farmTipo, filtroUtilizadorFarm, filtroDataInicioFarm, filtroDataFimFarm])
 
   const tableClass = 'w-full text-sm border-collapse min-w-[600px]'
   const thClass = isLight
@@ -476,7 +647,7 @@ export default function ContentAdmin() {
       </button>
 
       <div className={`flex flex-wrap border-b mb-4 -mx-1 gap-1 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
-        {SUBTABS.map(({ id, label }) => {
+        {SUBTABS.filter((t) => !t.direcaoGestorOnly || user?.cargo === 'direcao' || user?.cargo === 'gestor').map(({ id, label }) => {
           const active = activeSubtab === id
           return (
             <button
@@ -527,18 +698,16 @@ export default function ContentAdmin() {
               ))}
             </select>
             <label className={labelClass}>Data inicial</label>
-            <input
-              type="date"
+            <DatePicker
               value={filtroDataInicio}
-              onChange={(e) => setFiltroDataInicio(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
+              onChange={setFiltroDataInicio}
+              className="w-auto min-w-[120px]"
             />
             <label className={labelClass}>Data final</label>
-            <input
-              type="date"
+            <DatePicker
               value={filtroDataFim}
-              onChange={(e) => setFiltroDataFim(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
+              onChange={setFiltroDataFim}
+              className="w-auto min-w-[120px]"
             />
           </div>
           {registosFiltrados.length === 0 ? (
@@ -828,18 +997,16 @@ export default function ContentAdmin() {
               className="glass-input w-auto min-w-[120px] py-2"
             />
             <label className={labelClass}>Data inicial</label>
-            <input
-              type="date"
+            <DatePicker
               value={filtroPagDataInicio}
-              onChange={(e) => setFiltroPagDataInicio(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
+              onChange={setFiltroPagDataInicio}
+              className="w-auto min-w-[120px]"
             />
             <label className={labelClass}>Data final</label>
-            <input
-              type="date"
+            <DatePicker
               value={filtroPagDataFim}
-              onChange={(e) => setFiltroPagDataFim(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
+              onChange={setFiltroPagDataFim}
+              className="w-auto min-w-[120px]"
             />
             <label className={labelClass}>Valor mín. (€)</label>
             <input
@@ -949,6 +1116,314 @@ export default function ContentAdmin() {
         </>
       )}
 
+      {activeSubtab === 'armazem' && (user?.cargo === 'direcao' || user?.cargo === 'gestor') && (
+        <>
+          <h3 className="text-base font-semibold mb-2">Armazém Patrão</h3>
+          <p className={mutedTextClassMb4}>
+            Escolha o tipo de movimento (Entrada ou Saída), adicione itens com nome e quantidade. Clique em Adicionar para incluir na lista e Guardar quando terminar.
+          </p>
+          <div className="mb-4">
+            <span className={`text-sm font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Tipo de movimento</span>
+            <div className="flex gap-4 mt-2">
+              <label className={`flex items-center gap-2 cursor-pointer ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                <input
+                  type="radio"
+                  name="armazemTipo"
+                  value="entrada"
+                  checked={armazemTipo === 'entrada'}
+                  onChange={() => setArmazemTipo('entrada')}
+                  className="rounded-full border-slate-400"
+                />
+                Entrada
+              </label>
+              <label className={`flex items-center gap-2 cursor-pointer ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                <input
+                  type="radio"
+                  name="armazemTipo"
+                  value="saida"
+                  checked={armazemTipo === 'saida'}
+                  onChange={() => setArmazemTipo('saida')}
+                  className="rounded-full border-slate-400"
+                />
+                Saída
+              </label>
+            </div>
+          </div>
+          <form onSubmit={handleAdicionarArmazemItem} className="mb-4 flex flex-wrap items-end gap-4 max-w-2xl">
+            <div>
+              <label className={labelBlockClass}>Nome do item</label>
+              <input
+                type="text"
+                value={armazemNome}
+                onChange={(e) => setArmazemNome(e.target.value)}
+                placeholder="Ex: Caixas de peixe"
+                className="glass-input mt-2 w-48"
+              />
+            </div>
+            <div>
+              <label className={labelBlockClass}>Quantidade</label>
+              <input
+                type="number"
+                min={0}
+                value={armazemQuantidade}
+                onChange={(e) => setArmazemQuantidade(e.target.value)}
+                placeholder="0"
+                className="glass-input mt-2 w-24"
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </button>
+          </form>
+          {armazemItemsToSave.length > 0 && (
+            <div className={`mb-4 p-4 rounded-xl border ${isLight ? 'border-slate-300 bg-slate-50' : 'border-slate-600 bg-slate-800/50'}`}>
+              <h4 className="text-sm font-semibold mb-2">Itens a guardar ({armazemItemsToSave.length})</h4>
+              <ul className="space-y-2 mb-3">
+                {armazemItemsToSave.map((item, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 text-sm">
+                    <span>{item.nome} — {item.quantidade}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverArmazemItemDaLista(i)}
+                      className={`${btnDeleteClass} px-2 py-1 text-xs`}
+                      aria-label="Remover"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 inline mr-1" />
+                      Remover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={handleGuardarArmazem}
+                disabled={armazemSaving}
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {armazemSaving ? 'A guardar…' : 'Guardar registo'}
+              </button>
+            </div>
+          )}
+          <h4 className="text-sm font-semibold mb-2">Consultar registo por data</h4>
+          <div className="flex flex-wrap items-end gap-4 mb-2">
+            <div>
+              <label className={labelBlockClass}>Data</label>
+              <DatePicker
+                value={filtroArmazemData}
+                onChange={setFiltroArmazemData}
+                className="mt-2 w-full max-w-[180px]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!filtroArmazemData) {
+                  showToast('Selecione uma data.', 'info')
+                  return
+                }
+                const targetDate = filtroArmazemData
+                const registosOrdenados = [...(armazemPatrao || [])].sort(
+                  (a, b) => new Date(b.dataRegisto || 0) - new Date(a.dataRegisto || 0)
+                )
+                const doDia = registosOrdenados.filter((r) => {
+                  const d = r.dataRegisto ? new Date(r.dataRegisto).toISOString().slice(0, 10) : ''
+                  return d === targetDate
+                })
+                setArmazemRegistosDoDia(doDia)
+                if (doDia.length === 0) {
+                  showToast('Nenhum registo para esta data.', 'info')
+                }
+              }}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Ver registos
+            </button>
+          </div>
+
+          {armazemRegistosDoDia.length > 0 && (
+            <div className="mb-4 overflow-x-auto">
+              <table className="w-full min-w-[400px] text-sm border-collapse rounded-xl overflow-hidden border shadow-sm">
+                <thead>
+                  <tr className={isLight ? 'bg-slate-100' : 'bg-slate-800/80'}>
+                    <th className={`px-4 py-3 text-left font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Tipo</th>
+                    <th className={`px-4 py-3 text-left font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Hora</th>
+                    <th className={`px-4 py-3 text-left font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Registado por</th>
+                    <th className={`px-4 py-3 text-right font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Itens</th>
+                    <th className={`px-4 py-3 text-center font-semibold w-20 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Ver</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {armazemRegistosDoDia.map((registo, idx) => {
+                    const itens = Array.isArray(registo.itens) ? registo.itens : []
+                    const tipoLabel = registo.tipo === 'saida' ? 'Saída' : 'Entrada'
+                    const rowClass = idx % 2 === 0 ? (isLight ? 'bg-white' : 'bg-slate-900/50') : (isLight ? 'bg-slate-50/80' : 'bg-slate-800/30')
+                    const borderClass = isLight ? 'border-slate-200' : 'border-slate-700/50'
+                    return (
+                      <tr
+                        key={registo.id}
+                        className={`${rowClass} border-t ${borderClass} transition ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/50'}`}
+                      >
+                        <td className={`px-4 py-3 ${borderClass}`}>
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${registo.tipo === 'saida' ? (isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/20 text-amber-400') : (isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/20 text-emerald-400')}`}>
+                            {tipoLabel}
+                          </span>
+                        </td>
+                        <td className={`px-4 py-3 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                          {registo.dataRegisto ? new Date(registo.dataRegisto).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                        </td>
+                        <td className={`px-4 py-3 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                          {registo.registadoPor || '—'}
+                        </td>
+                        <td className={`px-4 py-3 text-right ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                          {itens.length} {itens.length === 1 ? 'item' : 'itens'}
+                        </td>
+                        <td className={`px-4 py-3 text-center ${borderClass}`}>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewArmazemItem(registo)}
+                            className={`inline-flex items-center justify-center p-2 rounded-lg transition ${isLight ? 'text-sky-600 hover:bg-sky-50' : 'text-sky-400 hover:bg-sky-500/20'}`}
+                            aria-label="Ver detalhe"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {previewArmazemItem && createPortal(
+            <div
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="preview-armazem-title"
+            >
+              <div
+                className="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity"
+                onClick={() => setPreviewArmazemItem(null)}
+                aria-hidden
+              />
+              <div className={`relative z-10 w-full max-w-[calc(100vw-2rem)] sm:max-w-lg rounded-2xl shadow-2xl overflow-hidden ${isLight ? 'bg-white' : 'bg-slate-900'}`}>
+                <div className={`px-6 pt-6 pb-4 ${isLight ? 'bg-gradient-to-br from-sky-50 to-slate-50' : 'bg-gradient-to-br from-sky-950/40 to-slate-900'}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h2 id="preview-armazem-title" className={`text-xl font-semibold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+                          Registo do Armazém
+                        </h2>
+                        <span className={`inline-block px-3 py-1 rounded-lg text-sm font-semibold ${previewArmazemItem.tipo === 'saida' ? (isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/20 text-amber-400') : (isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/20 text-emerald-400')}`}>
+                          {previewArmazemItem.tipo === 'saida' ? 'Saída' : 'Entrada'}
+                        </span>
+                      </div>
+                      <p className={`mt-2 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {previewArmazemItem.dataRegisto
+                          ? new Date(previewArmazemItem.dataRegisto).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })
+                          : '—'}
+                        {previewArmazemItem.registadoPor && (
+                          <span> · {previewArmazemItem.registadoPor}</span>
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewArmazemItem(null)}
+                      className={`shrink-0 p-2 rounded-xl transition ${isLight ? 'hover:bg-white/80 text-slate-500 hover:text-slate-700' : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200'}`}
+                      aria-label="Fechar"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className={`px-6 py-5 ${isLight ? 'bg-white' : 'bg-slate-900'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Itens
+                  </p>
+                  <p className={`text-sm mb-3 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {previewArmazemItem.tipo === 'saida'
+                      ? 'Itens que saíram do armazém (lista abaixo):'
+                      : 'Itens que entraram no armazém (lista abaixo):'}
+                  </p>
+                  <div className={`rounded-xl overflow-hidden border ${isLight ? 'border-slate-200 shadow-sm' : 'border-slate-700/60'}`}>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className={isLight ? 'bg-slate-50' : 'bg-slate-800/80'}>
+                          <th className={`px-4 py-3 text-left font-medium ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Nome</th>
+                          <th className={`px-4 py-3 text-center font-medium w-24 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Movimento</th>
+                          <th className={`px-4 py-3 text-right font-medium w-24 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Quantidade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(Array.isArray(previewArmazemItem.itens) ? previewArmazemItem.itens : (previewArmazemItem.nome != null ? [{ nome: previewArmazemItem.nome, quantidade: previewArmazemItem.quantidade ?? 0 }] : [])).map((it, i) => {
+                          const movimento = previewArmazemItem.tipo === 'saida' ? 'Saída' : 'Entrada'
+                          return (
+                            <tr
+                              key={i}
+                              className={`${i % 2 === 0 ? (isLight ? 'bg-white' : 'bg-slate-900/50') : (isLight ? 'bg-slate-50/50' : 'bg-slate-800/30')} ${isLight ? 'border-t border-slate-100' : 'border-t border-slate-800/50'}`}
+                            >
+                              <td className={`px-4 py-3 font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{it.nome}</td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${previewArmazemItem.tipo === 'saida' ? (isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/20 text-amber-400') : (isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/20 text-emerald-400')}`}>
+                                  {movimento}
+                                </span>
+                              </td>
+                              <td className={`px-4 py-3 text-right ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{it.quantidade}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        showConfirm({
+                          title: 'Apagar registo',
+                          message: 'Tem a certeza que deseja apagar este registo do armazém?',
+                          variant: 'danger',
+                          onConfirm: async () => {
+                            try {
+                              await deleteArmazemPatraoRegisto(previewArmazemItem.id)
+                              setArmazemRegistosDoDia((prev) => prev.filter((r) => String(r.id) !== String(previewArmazemItem.id)))
+                              setPreviewArmazemItem(null)
+                              showToast('Registo apagado.', 'success')
+                            } catch {
+                              showToast('Erro ao apagar.', 'error')
+                            }
+                          }
+                        })
+                      }}
+                      className={`flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium transition ${isLight ? 'border border-red-200 bg-red-50 text-red-600 hover:bg-red-100' : 'border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Apagar registo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewArmazemItem(null)}
+                      className="flex-1 btn-primary py-3 px-4 rounded-xl"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
+      )}
+
       {activeSubtab === 'metas' && (
         <>
           <h3 className="text-base font-semibold mb-2">Preços de venda (Calculadora e Compras)</h3>
@@ -991,9 +1466,49 @@ export default function ContentAdmin() {
             </button>
           </div>
 
+          <h3 className="text-base font-semibold mb-2 mt-8">Preços de venda - Plástico (Calculadora e Farm)</h3>
+          <p className={mutedTextClass}>
+            Valores por unidade de plástico para vendas — usados na Calculadora e no registo de apanhas no Farm.
+          </p>
+          <div className="mb-4 flex flex-wrap items-end gap-4">
+            <div>
+              <label className={`${labelClass} mb-1`}>Sem parceria (€/unidade)</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={precoPlasticoSemInput}
+                onChange={(e) => setPrecoPlasticoSemInput(e.target.value)}
+                className="glass-input py-2 w-28"
+                placeholder="3"
+              />
+            </div>
+            <div>
+              <label className={`${labelClass} mb-1`}>Em parceria (€/unidade)</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={precoPlasticoParceriaInput}
+                onChange={(e) => setPrecoPlasticoParceriaInput(e.target.value)}
+                className="glass-input py-2 w-28"
+                placeholder="38"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleGuardarPrecoPlastico}
+              disabled={precoPlasticoSaving}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {precoPlasticoSaving ? 'A guardar…' : 'Guardar preços'}
+            </button>
+          </div>
+
           <h3 className="text-base font-semibold mb-2 mt-8">Metas, pagamento ao jogador e ciclos</h3>
           <p className={mutedTextClassMb4}>
-            Meta semanal por utilizador e por equipa. A coluna €/peixe define quanto a administração paga por peixe a cada jogador (valor a receber = quantidade × esse valor). Marque como pago por jogador para reiniciar o ciclo.
+            Meta semanal por utilizador e por equipa (apenas peixe). As colunas €/peixe e €/plástico definem quanto a administração paga por unidade. O valor a receber é a soma de peixe + plástico. Marque como pago para reiniciar ambos os ciclos.
           </p>
           <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
@@ -1017,13 +1532,18 @@ export default function ContentAdmin() {
                   <th className={thClass}>Nome</th>
                   <th className={thClass}>Grupo</th>
                   <th className={thClass}>Meta semanal</th>
-                  <th className={thClass}>€/peixe (pagamento ao jogador)</th>
+                  <th className={thClass}>€/peixe</th>
+                  <th className={thClass}>€/plástico</th>
                   <th className={thClass}>Valor a receber (€)</th>
                   <th className={thClass}>Pagamento</th>
                 </tr>
               </thead>
               <tbody>
-                {(usuarios || []).map((u) => (
+                {(usuarios || []).map((u) => {
+                  const valorPeixe = valorReceberCalculadoPorUser[u.id] ?? 0
+                  const valorPlastico = valorReceberPlasticoCalculadoPorUser[u.id] ?? 0
+                  const valorTotal = valorPeixe + valorPlastico
+                  return (
                   <tr key={u.id ?? u.nome}>
                     <td className={tdClass}>{u.nome}</td>
                     <td className={tdClass}>{u.grupo || '—'}</td>
@@ -1053,12 +1573,25 @@ export default function ContentAdmin() {
                       />
                     </td>
                     <td className={tdClass}>
-                      {(valorReceberCalculadoPorUser[u.id] ?? 0).toFixed(2)} €
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        className="glass-input py-1.5 w-24 text-sm"
+                        value={precoPorUserEditPlastico[String(u.id)] ?? ''}
+                        onChange={(e) =>
+                          setPrecoPorUserEditPlastico((prev) => ({ ...prev, [String(u.id)]: e.target.value }))
+                        }
+                        placeholder={String(precoPlastico?.sem ?? 3)}
+                      />
+                    </td>
+                    <td className={tdClass}>
+                      {valorTotal.toFixed(2)} €
                     </td>
                     <td className={tdClass}>
                       <button
                         type="button"
-                        onClick={() => handleMarcarPagoUser(u.id, u.nome, valorReceberCalculadoPorUser[u.id] ?? 0)}
+                        onClick={() => handleMarcarPagoUser(u.id, u.nome, valorTotal)}
                         disabled={pagoSavingUserId !== null}
                         className={isLight ? 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50' : 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/70 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/30 disabled:opacity-50'}
                       >
@@ -1067,7 +1600,7 @@ export default function ContentAdmin() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -1090,18 +1623,46 @@ export default function ContentAdmin() {
               <Save className="h-4 w-4" />
               {precoPorUserSaving ? 'A guardar…' : 'Guardar preços por jogador'}
             </button>
+            <button
+              type="button"
+              onClick={handleGuardarPrecoPorJogadorPlastico}
+              disabled={precoPorUserSavingPlastico}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {precoPorUserSavingPlastico ? 'A guardar…' : 'Guardar preços por jogador (plástico)'}
+            </button>
           </div>
         </>
       )}
 
-      {activeSubtab === 'apanhas' && (
+      {activeSubtab === 'farm' && (
         <>
-          <h3 className="text-base font-semibold mb-2">Apanhas de Peixe por Utilizador</h3>
+          <h3 className="text-base font-semibold mb-2">Apanhas por Utilizador</h3>
+          <label className={`block text-xs font-medium uppercase tracking-wider mb-2 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
+            Tipo
+          </label>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setFarmTipo('peixe')}
+              className={`pill ${farmTipo === 'peixe' ? 'pill-active' : ''}`}
+            >
+              Peixe
+            </button>
+            <button
+              type="button"
+              onClick={() => setFarmTipo('plastico')}
+              className={`pill ${farmTipo === 'plastico' ? 'pill-active' : ''}`}
+            >
+              Plástico
+            </button>
+          </div>
           <div className={filterWrapperClass}>
             <label className={labelClass}>Utilizador</label>
             <select
-              value={filtroUtilizadorApanhas}
-              onChange={(e) => setFiltroUtilizadorApanhas(e.target.value)}
+              value={filtroUtilizadorFarm}
+              onChange={(e) => setFiltroUtilizadorFarm(e.target.value)}
               className="glass-input w-auto min-w-[180px] py-2"
             >
               <option value="">Todos os utilizadores</option>
@@ -1112,38 +1673,38 @@ export default function ContentAdmin() {
               ))}
             </select>
             <label className={labelClass}>Data inicial</label>
-            <input
-              type="date"
-              value={filtroDataInicioApanhas}
-              onChange={(e) => setFiltroDataInicioApanhas(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
+            <DatePicker
+              value={filtroDataInicioFarm}
+              onChange={setFiltroDataInicioFarm}
+              className="w-auto min-w-[120px]"
             />
             <label className={labelClass}>Data final</label>
-            <input
-              type="date"
-              value={filtroDataFimApanhas}
-              onChange={(e) => setFiltroDataFimApanhas(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
+            <DatePicker
+              value={filtroDataFimFarm}
+              onChange={setFiltroDataFimFarm}
+              className="w-auto min-w-[120px]"
             />
           </div>
-          <h4 className="text-sm font-semibold mt-4 mb-2">Totais por Utilizador</h4>
+          <h4 className="text-sm font-semibold mt-4 mb-2">
+            Totais por Utilizador ({farmTipo === 'peixe' ? 'Peixe' : 'Plástico'})
+          </h4>
           <div className={`${wrapperClass} mb-6`}>
             <table className={tableClass}>
               <thead>
                 <tr>
                   <th className={thClass}>Utilizador</th>
-                  <th className={thClass}>Total de Peixes</th>
+                  <th className={thClass}>{farmTipo === 'peixe' ? 'Total de Peixes' : 'Total de Plástico'}</th>
                 </tr>
               </thead>
               <tbody>
-                {apanhasAdmin.length === 0 ? (
+                {apanhasFarmAdmin.length === 0 ? (
                   <tr>
                     <td colSpan={2} className={emptyTdClass}>
                       Nenhuma apanha registada.
                     </td>
                   </tr>
                 ) : (
-                  apanhasAdmin.map(({ user: u, total }) => (
+                  apanhasFarmAdmin.map(({ user: u, total }) => (
                     <tr key={u.id}>
                       <td className={tdClass}>{u.nome}</td>
                       <td className={tdClass}>
@@ -1167,7 +1728,7 @@ export default function ContentAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {apanhasAdmin.flatMap(({ user: u, list }) =>
+                {apanhasFarmAdmin.flatMap(({ user: u, list }) =>
                   list.map((a) => (
                     <tr key={a.id}>
                       <td className={tdClass}>{u.nome}</td>
@@ -1181,12 +1742,13 @@ export default function ContentAdmin() {
                     </tr>
                   ))
                 )}
-                {apanhasAdmin.length > 0 && (
+                {apanhasFarmAdmin.length > 0 && (
                   <tr className={borderTrClass}>
                     <td className={`${tdClass} font-bold`}>Total geral</td>
                     <td className={`${tdClass} font-bold`}>
-                      {apanhasAdmin.reduce((s, { total }) => s + total, 0)}
+                      {apanhasFarmAdmin.reduce((s, { total }) => s + total, 0)}
                     </td>
+                    <td className={tdClass} />
                     <td className={tdClass} />
                   </tr>
                 )}

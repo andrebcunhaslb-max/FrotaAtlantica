@@ -38,8 +38,14 @@ export function AppProvider({ children }) {
   const [valorReceber, setValorReceber] = useState({})
   const [precoPeixe, setPrecoPeixe] = useState({ sem: 36, parceria: 38 })
   const [precoPeixePorUtilizador, setPrecoPeixePorUtilizador] = useState({})
+  const [precoPlastico, setPrecoPlastico] = useState({ sem: 3, parceria: 38 })
+  const [precoPlasticoPorUtilizador, setPrecoPlasticoPorUtilizador] = useState({})
+  const [apanhasPlastico, setApanhasPlastico] = useState([])
   const [cicloInicio, setCicloInicio] = useState(null)
   const [cicloPorUtilizador, setCicloPorUtilizador] = useState({})
+  const [cicloPlasticoPorUtilizador, setCicloPlasticoPorUtilizador] = useState({})
+  const [metasPlastico, setMetasPlastico] = useState([])
+  const [armazemPatrao, setArmazemPatrao] = useState([])
   const [tempoOnlineRank, setTempoOnlineRank] = useState([])
   const [chatMessages, setChatMessages] = useState([])
   const [chatEquipa, setChatEquipa] = useState([])
@@ -71,7 +77,7 @@ export function AppProvider({ children }) {
   const loadData = useCallback(async () => {
     if (!user) return
     try {
-      const [u, r, cData, m, a, metasData, vrData, ppData, cicloData, toData] = await Promise.all([
+      const [u, r, cData, m, a, metasData, vrData, ppData, ppPlasticoData, aPlastico, cicloData, cicloPlasticoData, metasPlasticoData, apData, toData] = await Promise.all([
         apiGet('usuarios').catch(() => []),
         apiGet('registos').catch(() => []),
         apiGet('caixa').catch(() => ({ valorTotal: 0 })),
@@ -80,7 +86,12 @@ export function AppProvider({ children }) {
         apiGet('metas').catch(() => []),
         apiGet('valor-receber').catch(() => ({})),
         apiGet('preco-peixe').catch(() => ({ sem: 36, parceria: 38 })),
+        apiGet('preco-plastico').catch(() => ({ sem: 3, parceria: 38 })),
+        apiGet('apanhas-plastico').catch(() => []),
         apiGet('ciclo-pagamento').catch(() => ({ cicloInicio: new Date().toISOString() })),
+        apiGet('ciclo-pagamento-plastico').catch(() => ({ cicloInicio: new Date().toISOString(), porUtilizador: {} })),
+        apiGet('metas-plastico').catch(() => []),
+        apiGet('armazem-patrao').catch(() => []),
         apiGet('tempo-online').catch(() => ({ users: [] })),
       ])
       setUsuarios(Array.isArray(u) ? u : [])
@@ -104,6 +115,21 @@ export function AppProvider({ children }) {
         }
         return out
       })
+      setPrecoPlastico(
+        ppPlasticoData && typeof ppPlasticoData.sem === 'number' && typeof ppPlasticoData.parceria === 'number'
+          ? { sem: ppPlasticoData.sem, parceria: ppPlasticoData.parceria }
+          : { sem: 3, parceria: 38 }
+      )
+      setPrecoPlasticoPorUtilizador(() => {
+        const raw = ppPlasticoData?.porUtilizador && typeof ppPlasticoData.porUtilizador === 'object' ? ppPlasticoData.porUtilizador : {}
+        const out = {}
+        for (const [uid, val] of Object.entries(raw)) {
+          if (typeof val === 'number' && !Number.isNaN(val)) out[uid] = val
+          else if (val && typeof val === 'object' && typeof val.sem === 'number') out[uid] = val.sem
+        }
+        return out
+      })
+      setApanhasPlastico(Array.isArray(aPlastico) ? aPlastico : [])
       setCicloInicio(
         cicloData && typeof cicloData.cicloInicio === 'string' ? cicloData.cicloInicio : new Date().toISOString()
       )
@@ -112,6 +138,13 @@ export function AppProvider({ children }) {
           ? cicloData.porUtilizador
           : {}
       )
+      setCicloPlasticoPorUtilizador(
+        cicloPlasticoData && cicloPlasticoData.porUtilizador && typeof cicloPlasticoData.porUtilizador === 'object'
+          ? cicloPlasticoData.porUtilizador
+          : {}
+      )
+      setMetasPlastico(Array.isArray(metasPlasticoData) ? metasPlasticoData : [])
+      setArmazemPatrao(Array.isArray(apData) ? apData : [])
       setTempoOnlineRank(Array.isArray(toData?.users) ? toData.users : [])
     } catch (err) {
       console.warn('loadData', err)
@@ -179,9 +212,17 @@ export function AppProvider({ children }) {
     await apiPost('apanhas', data)
     setApanhas(data)
   }, [])
+  const saveApanhasPlastico = useCallback(async (data) => {
+    await apiPost('apanhas-plastico', data)
+    setApanhasPlastico(data)
+  }, [])
   const saveMetas = useCallback(async (data) => {
     await apiPost('metas', data)
     setMetas(data)
+  }, [])
+  const saveMetasPlastico = useCallback(async (data) => {
+    await apiPost('metas-plastico', data)
+    setMetasPlastico(data)
   }, [])
   const saveValorReceber = useCallback(async (data) => {
     await apiPost('valor-receber', data)
@@ -200,6 +241,18 @@ export function AppProvider({ children }) {
     }
   }, [])
 
+  const savePrecoPlastico = useCallback(async (data) => {
+    await apiPost('preco-plastico', data)
+    if (data.sem != null && data.parceria != null) setPrecoPlastico((prev) => ({ ...prev, sem: data.sem, parceria: data.parceria }))
+    if (data.porUtilizador != null && typeof data.porUtilizador === 'object') {
+      const out = {}
+      for (const [uid, val] of Object.entries(data.porUtilizador)) {
+        if (typeof val === 'number' && !Number.isNaN(val)) out[uid] = val
+      }
+      setPrecoPlasticoPorUtilizador(out)
+    }
+  }, [])
+
   const marcarPago = useCallback(async (userId, { aprovadoPor = null, valor = null } = {}) => {
     const id = userId != null ? String(userId) : null
     if (!id) return
@@ -210,6 +263,33 @@ export function AppProvider({ children }) {
       [id]: { data: now, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined }
     }))
     setMetas((prev) => (Array.isArray(prev) ? prev.filter((m) => String(m.userId) !== id) : []))
+  }, [])
+
+  const marcarPagoPlastico = useCallback(async (userId, { aprovadoPor = null, valor = null } = {}) => {
+    const id = userId != null ? String(userId) : null
+    if (!id) return
+    await apiPost('ciclo-pagamento-plastico/pagar', { userId: id, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined })
+    const now = new Date().toISOString()
+    setCicloPlasticoPorUtilizador((prev) => ({
+      ...prev,
+      [id]: { data: now, aprovadoPor: aprovadoPor || undefined, valor: valor != null ? valor : undefined }
+    }))
+    setMetasPlastico((prev) => (Array.isArray(prev) ? prev.filter((m) => String(m.userId) !== id) : []))
+  }, [])
+
+  const saveArmazemPatraoRegisto = useCallback(async ({ itens, registadoPor, tipo }) => {
+    const res = await apiPost('armazem-patrao', { itens, registadoPor: registadoPor || undefined, tipo: tipo || undefined })
+    if (res?.registo) {
+      setArmazemPatrao((prev) => [...(Array.isArray(prev) ? prev : []), res.registo])
+    } else {
+      const list = await apiGet('armazem-patrao')
+      setArmazemPatrao(Array.isArray(list) ? list : [])
+    }
+  }, [])
+
+  const deleteArmazemPatraoRegisto = useCallback(async (id) => {
+    await apiDelete('armazem-patrao', { id })
+    setArmazemPatrao((prev) => (Array.isArray(prev) ? prev.filter((r) => String(r.id) !== String(id)) : []))
   }, [])
 
   const loadChat = useCallback(async () => {
@@ -424,10 +504,24 @@ export function AppProvider({ children }) {
     setPrecoPeixe,
     precoPeixePorUtilizador,
     setPrecoPeixePorUtilizador,
+    precoPlastico,
+    setPrecoPlastico,
+    precoPlasticoPorUtilizador,
+    setPrecoPlasticoPorUtilizador,
+    apanhasPlastico,
+    saveApanhasPlastico,
+    savePrecoPlastico,
     cicloInicio,
     setCicloInicio,
     cicloPorUtilizador,
     setCicloPorUtilizador,
+    cicloPlasticoPorUtilizador,
+    metasPlastico,
+    saveMetasPlastico,
+    marcarPagoPlastico,
+    armazemPatrao,
+    saveArmazemPatraoRegisto,
+    deleteArmazemPatraoRegisto,
     tempoOnlineRank,
     setTempoOnlineRank,
     tickTempoOnline,
