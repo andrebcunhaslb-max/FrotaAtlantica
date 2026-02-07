@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { apiGet, apiPost, apiDelete } from '../api'
 
 const AppContext = createContext(null)
@@ -52,6 +52,9 @@ export function AppProvider({ children }) {
   const [comunicadosEquipa, setComunicadosEquipa] = useState([])
   const [lastSeenComunicadoByGrupo, setLastSeenComunicadoByGrupo] = useState({})
   const [activeEquipaGrupo, setActiveEquipaGrupo] = useState(null)
+  const [lastViewedChatGeralAt, setLastViewedChatGeralAt] = useState(0)
+  const [lastViewedChatEquipaAt, setLastViewedChatEquipaAt] = useState(0)
+  const [chatViewingState, setChatViewingStateInternal] = useState(null) // 'geral' | 'equipa' | null
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -293,6 +296,9 @@ export function AppProvider({ children }) {
   }, [])
 
   const loadChat = useCallback(async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:loadChat',message:'loadChat called',data:{},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
     try {
       const list = await apiGet('chat')
       setChatMessages(Array.isArray(list) ? list : [])
@@ -431,6 +437,42 @@ export function AppProvider({ children }) {
     [comunicadosEquipa, lastSeenComunicadoByGrupo]
   )
 
+  const setChatViewingState = useCallback((state) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:setChatViewingState',message:'setChatViewingState',data:{state},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+    setChatViewingStateInternal(state)
+    const t = Date.now()
+    if (state === 'geral') setLastViewedChatGeralAt(t)
+    else if (state === 'equipa') setLastViewedChatEquipaAt(t)
+  }, [])
+
+  const latestChatGeralTs = useMemo(() => {
+    const list = Array.isArray(chatMessages) ? chatMessages : []
+    if (list.length === 0) return 0
+    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+  }, [chatMessages])
+  const latestChatEquipaTs = useMemo(() => {
+    const list = Array.isArray(chatEquipa) ? chatEquipa : []
+    if (list.length === 0) return 0
+    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+  }, [chatEquipa])
+  const hasUnreadChatGeral = useMemo(
+    () => latestChatGeralTs > lastViewedChatGeralAt && chatViewingState !== 'geral',
+    [latestChatGeralTs, lastViewedChatGeralAt, chatViewingState]
+  )
+  const hasUnreadChatEquipa = useMemo(
+    () => latestChatEquipaTs > lastViewedChatEquipaAt && chatViewingState !== 'equipa',
+    [latestChatEquipaTs, lastViewedChatEquipaAt, chatViewingState]
+  )
+  const hasUnreadChat = useMemo(() => hasUnreadChatGeral || hasUnreadChatEquipa, [hasUnreadChatGeral, hasUnreadChatEquipa])
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:unread-state',message:'unread state',data:{chatMessagesLen:Array.isArray(chatMessages)?chatMessages.length:0,chatEquipaLen:Array.isArray(chatEquipa)?chatEquipa.length:0,latestChatGeralTs,latestChatEquipaTs,lastViewedChatGeralAt,lastViewedChatEquipaAt,chatViewingState,hasUnreadChatGeral,hasUnreadChatEquipa},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+  }, [chatMessages, chatEquipa, latestChatGeralTs, latestChatEquipaTs, lastViewedChatGeralAt, lastViewedChatEquipaAt, chatViewingState, hasUnreadChatGeral, hasUnreadChatEquipa]);
+  // #endregion
+
   useEffect(() => {
     const grupo = (user?.grupo || '').trim() || activeEquipaGrupo
     if (!grupo) return
@@ -438,6 +480,21 @@ export function AppProvider({ children }) {
     const id = setInterval(() => loadComunicados(grupo), 8000)
     return () => clearInterval(id)
   }, [user?.grupo, activeEquipaGrupo, loadComunicados])
+
+  useEffect(() => {
+    if (!user) return
+    loadChat()
+    const id = setInterval(loadChat, 8000)
+    return () => clearInterval(id)
+  }, [user, loadChat])
+
+  useEffect(() => {
+    const grupo = (user?.grupo || '').trim() || activeEquipaGrupo
+    if (!grupo) return
+    loadChatEquipa(grupo)
+    const id = setInterval(() => loadChatEquipa(grupo), 8000)
+    return () => clearInterval(id)
+  }, [user?.grupo, activeEquipaGrupo, loadChatEquipa])
 
   const login = useCallback((u) => {
     setUser(u)
@@ -538,6 +595,10 @@ export function AppProvider({ children }) {
     deleteComunicado,
     markComunicadosAsSeen,
     hasUnreadComunicados,
+    setChatViewingState,
+    hasUnreadChat,
+    hasUnreadChatGeral,
+    hasUnreadChatEquipa,
     loadData,
     saveUsuarios,
     saveRegistos,

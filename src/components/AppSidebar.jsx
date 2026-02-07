@@ -27,7 +27,7 @@ const itemClass = (isActive, isLight) =>
   }`
 
 export default function AppSidebar() {
-  const { user, activeTab, setActiveTab, logout, isLight, sidebarOpen, setSidebarOpen, hasUnreadComunicados, activeEquipaGrupo } = useApp()
+  const { user, activeTab, setActiveTab, logout, isLight, sidebarOpen, setSidebarOpen, hasUnreadComunicados, hasUnreadChatGeral, hasUnreadChatEquipa, activeEquipaGrupo } = useApp()
   const showAdmin =
     user?.cargo === 'direcao' || user?.cargo === 'gestor' || user?.cargo === 'supervisor'
 
@@ -56,6 +56,11 @@ export default function AppSidebar() {
           const isActive = activeTab === id
           const grupoForBadge = userGrupo || activeEquipaGrupo
           const showComunicadoBadge = id === 'chat' && grupoForBadge && hasUnreadComunicados?.(grupoForBadge)
+          const showGeralUnread = id === 'chat' && hasUnreadChatGeral
+          const showEquipaUnread = id === 'chat' && hasUnreadChatEquipa
+          // #region agent log
+          if (id === 'chat') { fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppSidebar.jsx:chat-item',message:'sidebar chat item render',data:{showGeralUnread,showEquipaUnread,hasUnreadChatGeral,hasUnreadChatEquipa},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{}); }
+          // #endregion
           return (
             <button
               key={id}
@@ -65,11 +70,18 @@ export default function AppSidebar() {
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden />
               {label}
-              {showComunicadoBadge && (
-                <span
-                  className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber-500 animate-pulse"
-                  aria-label="Novo comunicado"
-                />
+              {(showGeralUnread || showEquipaUnread || showComunicadoBadge) && (
+                <span className="absolute top-2 right-2 flex items-center gap-0.5" aria-label={[showGeralUnread && 'Chat geral', showEquipaUnread && 'Chat equipa', showComunicadoBadge && 'Comunicados'].filter(Boolean).join(', ') + ' por ler'}>
+                  {showGeralUnread && (
+                    <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" title="Mensagens por ler no chat geral" />
+                  )}
+                  {showEquipaUnread && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title="Mensagens por ler no chat da equipa" />
+                  )}
+                  {showComunicadoBadge && (
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" title="Comunicados por ler" />
+                  )}
+                </span>
               )}
             </button>
           )

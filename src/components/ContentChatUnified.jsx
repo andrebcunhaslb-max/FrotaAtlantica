@@ -1,44 +1,21 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import ContentChat from './ContentChat'
 import ContentEquipa from './ContentEquipa'
 
 export default function ContentChatUnified() {
-  const { user, activeEquipaGrupo, isLight, chatMessages, chatEquipa, loadChatEquipa } = useApp()
+  const { user, activeEquipaGrupo, isLight, setChatViewingState, hasUnreadChatGeral, hasUnreadChatEquipa } = useApp()
   const userGrupo = (user?.grupo || '').trim()
   const isDirecaoGestor = user?.cargo === 'direcao' || user?.cargo === 'gestor'
   const showEquipa = userGrupo || isDirecaoGestor
   const grupo = activeEquipaGrupo || user?.grupo
   const [activeTab, setActiveTab] = useState('geral')
-  const [lastViewedGeralAt, setLastViewedGeralAt] = useState(0)
-  const [lastViewedEquipaAt, setLastViewedEquipaAt] = useState(0)
-
-  const latestGeral = useMemo(() => {
-    const list = Array.isArray(chatMessages) ? chatMessages : []
-    if (list.length === 0) return 0
-    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
-  }, [chatMessages])
-  const latestEquipa = useMemo(() => {
-    const list = Array.isArray(chatEquipa) ? chatEquipa : []
-    if (list.length === 0) return 0
-    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
-  }, [chatEquipa])
 
   useEffect(() => {
-    const t = Date.now()
-    if (activeTab === 'geral') setLastViewedGeralAt(t)
-    else if (activeTab === 'equipa') setLastViewedEquipaAt(t)
-  }, [activeTab])
-
-  useEffect(() => {
-    if (!showEquipa || !grupo) return
-    loadChatEquipa(grupo)
-    const id = setInterval(() => loadChatEquipa(grupo), 8000)
-    return () => clearInterval(id)
-  }, [showEquipa, grupo, loadChatEquipa])
-
-  const hasNewGeral = activeTab !== 'geral' && latestGeral > lastViewedGeralAt
-  const hasNewEquipa = activeTab !== 'equipa' && latestEquipa > lastViewedEquipaAt
+    const state = showEquipa ? activeTab : 'geral'
+    setChatViewingState(state)
+  }, [activeTab, showEquipa, setChatViewingState])
+  useEffect(() => () => setChatViewingState(null), [setChatViewingState])
 
   const tabBorder = isLight ? 'border-slate-200' : 'border-slate-600'
   const tabActiveBg = isLight ? 'bg-white border-sky-500/50' : 'bg-slate-900/80 border-sky-500/40'
@@ -60,7 +37,7 @@ export default function ContentChatUnified() {
               className={`relative px-5 py-3 min-h-[44px] transition ${activeTab === 'geral' ? `${tabActiveBg} rounded-t-xl border border-sky-500/40 shadow-sm ${tabActiveText}` : `border border-transparent ${tabInactiveBg}`}`}
             >
               Geral
-              {hasNewGeral && (
+              {hasUnreadChatGeral && (
                 <span className={`absolute top-1.5 right-2 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 animate-pulse ${isLight ? 'ring-slate-100' : 'ring-slate-800'}`} aria-label="Novas mensagens no chat geral" />
               )}
             </button>
@@ -75,7 +52,7 @@ export default function ContentChatUnified() {
               className={`relative px-5 py-3 min-h-[44px] transition ${activeTab === 'equipa' ? `${tabActiveBg} rounded-t-xl border border-sky-500/40 shadow-sm ${tabActiveText}` : `border border-transparent ${tabInactiveBg}`}`}
             >
               Equipa
-              {hasNewEquipa && (
+              {hasUnreadChatEquipa && (
                 <span className={`absolute top-1.5 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 animate-pulse ${isLight ? 'ring-slate-100' : 'ring-slate-800'}`} aria-label="Novas mensagens no chat da equipa" />
               )}
             </button>
