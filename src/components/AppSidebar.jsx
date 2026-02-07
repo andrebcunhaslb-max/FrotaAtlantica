@@ -58,9 +58,6 @@ export default function AppSidebar() {
           const showComunicadoBadge = id === 'chat' && grupoForBadge && hasUnreadComunicados?.(grupoForBadge)
           const showGeralUnread = id === 'chat' && hasUnreadChatGeral
           const showEquipaUnread = id === 'chat' && hasUnreadChatEquipa
-          // #region agent log
-          if (id === 'chat') { fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppSidebar.jsx:chat-item',message:'sidebar chat item render',data:{showGeralUnread,showEquipaUnread,hasUnreadChatGeral,hasUnreadChatEquipa},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{}); }
-          // #endregion
           return (
             <button
               key={id}

@@ -52,8 +52,26 @@ export function AppProvider({ children }) {
   const [comunicadosEquipa, setComunicadosEquipa] = useState([])
   const [lastSeenComunicadoByGrupo, setLastSeenComunicadoByGrupo] = useState({})
   const [activeEquipaGrupo, setActiveEquipaGrupo] = useState(null)
-  const [lastViewedChatGeralAt, setLastViewedChatGeralAt] = useState(0)
-  const [lastViewedChatEquipaAt, setLastViewedChatEquipaAt] = useState(0)
+  const [lastViewedChatGeralAt, setLastViewedChatGeralAt] = useState(() => {
+    try {
+      const v = localStorage.getItem('frota_lastViewedChatGeralAt')
+      const n = v ? parseInt(v, 10) : 0
+      return Number.isFinite(n) ? n : 0
+    } catch {
+      return 0
+    }
+  })
+  const [lastViewedChatEquipaByGrupo, setLastViewedChatEquipaByGrupo] = useState(() => {
+    try {
+      const raw = localStorage.getItem('frota_lastViewedChatEquipaByGrupo')
+      if (!raw) return {}
+      const o = JSON.parse(raw)
+      return typeof o === 'object' && o !== null ? o : {}
+    } catch {
+      return {}
+    }
+  })
+  const [latestChatEquipaTsByGrupo, setLatestChatEquipaTsByGrupo] = useState({})
   const [chatViewingState, setChatViewingStateInternal] = useState(null) // 'geral' | 'equipa' | null
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
@@ -296,15 +314,16 @@ export function AppProvider({ children }) {
   }, [])
 
   const loadChat = useCallback(async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:loadChat',message:'loadChat called',data:{},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
     try {
       const list = await apiGet('chat')
-      setChatMessages(Array.isArray(list) ? list : [])
+      const arr = Array.isArray(list) ? list : []
+      setChatMessages(arr)
+      const maxTs = arr.length === 0 ? 0 : Math.max(...arr.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+      return maxTs
     } catch (err) {
       console.warn('loadChat', err)
       setChatMessages([])
+      return 0
     }
   }, [])
 
@@ -318,7 +337,10 @@ export function AppProvider({ children }) {
           cargo: user.cargo ?? '',
           text: String(text).trim()
         })
-        await loadChat()
+        const maxTs = (await loadChat()) ?? 0
+        const t = Math.max(Date.now(), maxTs)
+        setLastViewedChatGeralAt(t)
+        try { localStorage.setItem('frota_lastViewedChatGeralAt', String(t)) } catch (_) {}
       } catch (err) {
         console.warn('sendChatMessage', err)
         showToast('Erro ao enviar mensagem.', 'error')
@@ -328,13 +350,18 @@ export function AppProvider({ children }) {
   )
 
   const loadChatEquipa = useCallback(async (grupo) => {
-    if (!grupo) return
+    if (!grupo) return 0
     try {
       const list = await apiGet(`chat?grupo=${encodeURIComponent(grupo)}`)
-      setChatEquipa(Array.isArray(list) ? list : [])
+      const arr = Array.isArray(list) ? list : []
+      setChatEquipa(arr)
+      const maxTs = arr.length === 0 ? 0 : Math.max(...arr.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+      setLatestChatEquipaTsByGrupo((prev) => ({ ...prev, [grupo]: maxTs }))
+      return maxTs
     } catch (err) {
       console.warn('loadChatEquipa', err)
       setChatEquipa([])
+      return 0
     }
   }, [])
 
@@ -349,7 +376,13 @@ export function AppProvider({ children }) {
           grupo,
           text: String(text).trim()
         })
-        await loadChatEquipa(grupo)
+        const maxTs = (await loadChatEquipa(grupo)) ?? 0
+        const t = Math.max(Date.now(), maxTs)
+        setLastViewedChatEquipaByGrupo((prev) => {
+          const next = { ...prev, [grupo]: t }
+          try { localStorage.setItem('frota_lastViewedChatEquipaByGrupo', JSON.stringify(next)) } catch (_) {}
+          return next
+        })
       } catch (err) {
         console.warn('sendChatEquipa', err)
         showToast('Erro ao enviar mensagem.', 'error')
@@ -437,42 +470,6 @@ export function AppProvider({ children }) {
     [comunicadosEquipa, lastSeenComunicadoByGrupo]
   )
 
-  const setChatViewingState = useCallback((state) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:setChatViewingState',message:'setChatViewingState',data:{state},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
-    setChatViewingStateInternal(state)
-    const t = Date.now()
-    if (state === 'geral') setLastViewedChatGeralAt(t)
-    else if (state === 'equipa') setLastViewedChatEquipaAt(t)
-  }, [])
-
-  const latestChatGeralTs = useMemo(() => {
-    const list = Array.isArray(chatMessages) ? chatMessages : []
-    if (list.length === 0) return 0
-    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
-  }, [chatMessages])
-  const latestChatEquipaTs = useMemo(() => {
-    const list = Array.isArray(chatEquipa) ? chatEquipa : []
-    if (list.length === 0) return 0
-    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
-  }, [chatEquipa])
-  const hasUnreadChatGeral = useMemo(
-    () => latestChatGeralTs > lastViewedChatGeralAt && chatViewingState !== 'geral',
-    [latestChatGeralTs, lastViewedChatGeralAt, chatViewingState]
-  )
-  const hasUnreadChatEquipa = useMemo(
-    () => latestChatEquipaTs > lastViewedChatEquipaAt && chatViewingState !== 'equipa',
-    [latestChatEquipaTs, lastViewedChatEquipaAt, chatViewingState]
-  )
-  const hasUnreadChat = useMemo(() => hasUnreadChatGeral || hasUnreadChatEquipa, [hasUnreadChatGeral, hasUnreadChatEquipa])
-
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AppContext.jsx:unread-state',message:'unread state',data:{chatMessagesLen:Array.isArray(chatMessages)?chatMessages.length:0,chatEquipaLen:Array.isArray(chatEquipa)?chatEquipa.length:0,latestChatGeralTs,latestChatEquipaTs,lastViewedChatGeralAt,lastViewedChatEquipaAt,chatViewingState,hasUnreadChatGeral,hasUnreadChatEquipa},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-  }, [chatMessages, chatEquipa, latestChatGeralTs, latestChatEquipaTs, lastViewedChatGeralAt, lastViewedChatEquipaAt, chatViewingState, hasUnreadChatGeral, hasUnreadChatEquipa]);
-  // #endregion
-
   useEffect(() => {
     const grupo = (user?.grupo || '').trim() || activeEquipaGrupo
     if (!grupo) return
@@ -481,19 +478,65 @@ export function AppProvider({ children }) {
     return () => clearInterval(id)
   }, [user?.grupo, activeEquipaGrupo, loadComunicados])
 
+  // Chat geral: carregar em background para todos (notificação "por ler" quando outro escreve)
   useEffect(() => {
     if (!user) return
     loadChat()
-    const id = setInterval(loadChat, 8000)
-    return () => clearInterval(id)
+    const id = setInterval(loadChat, 5000)
+    const onFocus = () => loadChat()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [user, loadChat])
 
+  const setChatViewingState = useCallback((state, equipoGrupo) => {
+    setChatViewingStateInternal(state)
+    const t = Date.now()
+    if (state === 'geral') {
+      setLastViewedChatGeralAt(t)
+      try { localStorage.setItem('frota_lastViewedChatGeralAt', String(t)) } catch (_) {}
+    } else if (state === 'equipa' && equipoGrupo) {
+      setLastViewedChatEquipaByGrupo((prev) => {
+        const next = { ...prev, [equipoGrupo]: t }
+        try { localStorage.setItem('frota_lastViewedChatEquipaByGrupo', JSON.stringify(next)) } catch (_) {}
+        return next
+      })
+    }
+  }, [])
+
+  const latestChatGeralTs = useMemo(() => {
+    const list = Array.isArray(chatMessages) ? chatMessages : []
+    if (list.length === 0) return 0
+    return Math.max(...list.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+  }, [chatMessages])
+  const hasUnreadChatGeral = useMemo(
+    () => latestChatGeralTs > lastViewedChatGeralAt && chatViewingState !== 'geral',
+    [latestChatGeralTs, lastViewedChatGeralAt, chatViewingState]
+  )
+
+  const hasUnreadChatEquipaForGrupo = useCallback(
+    (g) => (latestChatEquipaTsByGrupo[g] || 0) > (lastViewedChatEquipaByGrupo[g] || 0),
+    [latestChatEquipaTsByGrupo, lastViewedChatEquipaByGrupo]
+  )
+  const hasUnreadChatEquipa = useMemo(
+    () => Object.keys(latestChatEquipaTsByGrupo).some((g) => hasUnreadChatEquipaForGrupo(g)),
+    [latestChatEquipaTsByGrupo, hasUnreadChatEquipaForGrupo]
+  )
+
+  // Chat equipa: carregar em background para o grupo do utilizador (notificação "por ler" quando outro escreve)
   useEffect(() => {
-    const grupo = (user?.grupo || '').trim() || activeEquipaGrupo
+    const grupo = activeEquipaGrupo || (user?.grupo || '').trim()
     if (!grupo) return
     loadChatEquipa(grupo)
-    const id = setInterval(() => loadChatEquipa(grupo), 8000)
-    return () => clearInterval(id)
+    const id = setInterval(() => loadChatEquipa(grupo), 5000)
+    const onFocus = () => loadChatEquipa(grupo)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [user?.grupo, activeEquipaGrupo, loadChatEquipa])
 
   const login = useCallback((u) => {
@@ -595,10 +638,6 @@ export function AppProvider({ children }) {
     deleteComunicado,
     markComunicadosAsSeen,
     hasUnreadComunicados,
-    setChatViewingState,
-    hasUnreadChat,
-    hasUnreadChatGeral,
-    hasUnreadChatEquipa,
     loadData,
     saveUsuarios,
     saveRegistos,
@@ -616,6 +655,10 @@ export function AppProvider({ children }) {
     setSidebarOpen,
     activeEquipaGrupo,
     setActiveEquipaGrupo,
+    setChatViewingState,
+    hasUnreadChatGeral,
+    hasUnreadChatEquipa,
+    hasUnreadChatEquipaForGrupo,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

@@ -13,8 +13,9 @@ export default function ContentChatUnified() {
 
   useEffect(() => {
     const state = showEquipa ? activeTab : 'geral'
-    setChatViewingState(state)
-  }, [activeTab, showEquipa, setChatViewingState])
+    const equipoGrupo = state === 'equipa' ? grupo : undefined
+    setChatViewingState(state, equipoGrupo)
+  }, [activeTab, showEquipa, grupo, setChatViewingState])
   useEffect(() => () => setChatViewingState(null), [setChatViewingState])
 
   const tabBorder = isLight ? 'border-slate-200' : 'border-slate-600'
@@ -33,7 +34,10 @@ export default function ContentChatUnified() {
               aria-selected={activeTab === 'geral'}
               aria-controls="chat-geral-panel"
               id="tab-geral"
-              onClick={() => setActiveTab('geral')}
+              onClick={() => {
+                setActiveTab('geral')
+                setChatViewingState('geral')
+              }}
               className={`relative px-5 py-3 min-h-[44px] transition ${activeTab === 'geral' ? `${tabActiveBg} rounded-t-xl border border-sky-500/40 shadow-sm ${tabActiveText}` : `border border-transparent ${tabInactiveBg}`}`}
             >
               Geral
@@ -48,7 +52,10 @@ export default function ContentChatUnified() {
               aria-selected={activeTab === 'equipa'}
               aria-controls="chat-equipa-panel"
               id="tab-equipa"
-              onClick={() => setActiveTab('equipa')}
+              onClick={() => {
+                setActiveTab('equipa')
+                setChatViewingState('equipa', grupo)
+              }}
               className={`relative px-5 py-3 min-h-[44px] transition ${activeTab === 'equipa' ? `${tabActiveBg} rounded-t-xl border border-sky-500/40 shadow-sm ${tabActiveText}` : `border border-transparent ${tabInactiveBg}`}`}
             >
               Equipa
