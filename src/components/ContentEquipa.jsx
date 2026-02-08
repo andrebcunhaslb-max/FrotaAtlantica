@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Send, MessageCircle, Megaphone, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import GlassSelect from './GlassSelect'
 
 function formatChatTime(iso) {
   if (!iso) return '—'
@@ -130,19 +131,16 @@ export default function ContentEquipa({ grupo }) {
           Escolhe a equipa cujo chat e comunicados queres ver:
         </p>
         <div className="px-5">
-          <select
+          <GlassSelect
             value={activeEquipaGrupo || ''}
-            onChange={(e) => setActiveEquipaGrupo(e.target.value || null)}
-            className={`glass-input max-w-[200px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}
+            onChange={(v) => setActiveEquipaGrupo(v || null)}
+            className="max-w-[200px]"
             aria-label="Selecionar equipa"
-          >
-            <option value="">— Escolher equipa —</option>
-            {equipasDisponiveis.map((g) => (
-              <option key={g} value={g}>
-                Equipa {g}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: '— Escolher equipa —' },
+              ...equipasDisponiveis.map((g) => ({ value: g, label: `Equipa ${g}` })),
+            ]}
+          />
         </div>
       </div>
     )
@@ -155,18 +153,13 @@ export default function ContentEquipa({ grupo }) {
       <div className="flex flex-wrap items-center gap-3 mt-0 mb-3 px-5 pt-5">
         <h2 className="text-lg font-semibold">Equipa {grupo}</h2>
         {isDirecaoGestor && equipasDisponiveis.length > 1 && (
-          <select
+          <GlassSelect
             value={grupo}
-            onChange={(e) => setActiveEquipaGrupo(e.target.value || null)}
-            className={`glass-input text-sm py-1.5 px-3 max-w-[140px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}
+            onChange={(v) => setActiveEquipaGrupo(v || null)}
+            className="max-w-[140px] py-1.5 text-sm"
             aria-label="Mudar equipa"
-          >
-            {equipasDisponiveis.map((g) => (
-              <option key={g} value={g}>
-                Equipa {g}
-              </option>
-            ))}
-          </select>
+            options={equipasDisponiveis.map((g) => ({ value: g, label: `Equipa ${g}` }))}
+          />
         )}
       </div>
       <div className="flex gap-2 mb-4 px-5">

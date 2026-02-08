@@ -14,6 +14,7 @@ import {
 import { useApp } from '../context/AppContext'
 import { apiGet, apiPost } from '../api'
 import DatePicker from './DatePicker'
+import GlassSelect from './GlassSelect'
 
 const SUBTABS = [
   { id: 'relatorios', label: 'Relatórios' },
@@ -740,28 +741,26 @@ export default function ContentAdmin() {
           <h3 className="text-base font-semibold mb-2">Registos de Vendas e Compras</h3>
           <div className={filterWrapperClass}>
             <label className={labelClass}>Tipo</label>
-            <select
+            <GlassSelect
               value={filtroTipo}
-              onChange={(e) => setFiltroTipo(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
-            >
-              <option value="">Todos</option>
-              <option value="venda">Venda</option>
-              <option value="compra">Compra</option>
-            </select>
+              onChange={setFiltroTipo}
+              className="w-auto min-w-[120px] py-2"
+              options={[
+                { value: '', label: 'Todos' },
+                { value: 'venda', label: 'Venda' },
+                { value: 'compra', label: 'Compra' },
+              ]}
+            />
             <label className={labelClass}>Funcionário</label>
-            <select
+            <GlassSelect
               value={filtroFunc}
-              onChange={(e) => setFiltroFunc(e.target.value)}
-              className="glass-input w-auto min-w-[120px] py-2"
-            >
-              <option value="">Todos</option>
-              {usuarios.map((u) => (
-                <option key={u.id ?? u.nome} value={u.nome}>
-                  {u.nome}
-                </option>
-              ))}
-            </select>
+              onChange={setFiltroFunc}
+              className="w-auto min-w-[120px] py-2"
+              options={[
+                { value: '', label: 'Todos' },
+                ...usuarios.map((u) => ({ value: u.nome, label: u.nome })),
+              ]}
+            />
             <label className={labelClass}>Data inicial</label>
             <DatePicker
               value={filtroDataInicio}
@@ -892,31 +891,29 @@ export default function ContentAdmin() {
               <label className={labelBlockClass}>
                 Responsável
               </label>
-              <select
+              <GlassSelect
                 value={respCaixa}
-                onChange={(e) => setRespCaixa(e.target.value)}
-                className="glass-input mt-2"
-              >
-                <option value="">—</option>
-                {usuarios.map((u) => (
-                  <option key={u.id ?? u.nome} value={u.nome}>
-                    {u.nome}
-                  </option>
-                ))}
-              </select>
+                onChange={setRespCaixa}
+                className="mt-2"
+                options={[
+                  { value: '', label: '—' },
+                  ...usuarios.map((u) => ({ value: u.nome, label: u.nome })),
+                ]}
+              />
             </div>
             <div>
               <label className={labelBlockClass}>
                 Tipo de movimento
               </label>
-              <select
+              <GlassSelect
                 value={tipoMovimento}
-                onChange={(e) => setTipoMovimento(e.target.value)}
-                className="glass-input mt-2"
-              >
-                <option value="Depósito">Depósito</option>
-                <option value="Retirada">Retirada</option>
-              </select>
+                onChange={setTipoMovimento}
+                className="mt-2"
+                options={[
+                  { value: 'Depósito', label: 'Depósito' },
+                  { value: 'Retirada', label: 'Retirada' },
+                ]}
+              />
             </div>
             <div>
               <label className={labelBlockClass}>
@@ -1755,18 +1752,15 @@ export default function ContentAdmin() {
           </div>
           <div className={filterWrapperClass}>
             <label className={labelClass}>Utilizador</label>
-            <select
-              value={filtroUtilizadorFarm}
-              onChange={(e) => setFiltroUtilizadorFarm(e.target.value)}
-              className="glass-input w-auto min-w-[180px] py-2"
-            >
-              <option value="">Todos os utilizadores</option>
-              {usuarios.map((u) => (
-                <option key={u.id ?? u.nome} value={u.id}>
-                  {u.nome}
-                </option>
-              ))}
-            </select>
+            <GlassSelect
+              value={String(filtroUtilizadorFarm ?? '')}
+              onChange={setFiltroUtilizadorFarm}
+              className="w-auto min-w-[180px] py-2"
+              options={[
+                { value: '', label: 'Todos os utilizadores' },
+                ...usuarios.map((u) => ({ value: String(u.id ?? u.nome), label: u.nome })),
+              ]}
+            />
             <label className={labelClass}>Data inicial</label>
             <DatePicker
               value={filtroDataInicioFarm}
@@ -1890,29 +1884,29 @@ export default function ContentAdmin() {
               </div>
               <div>
                 <label className={labelBlockClass}>Cargo</label>
-                <select
+                <GlassSelect
                   value={userCargo}
-                  onChange={(e) => setUserCargo(e.target.value)}
-                  className="glass-input mt-2"
-                >
-                  <option value="funcionario">Funcionário</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="gestor">Gestor</option>
-                  <option value="direcao">Direção</option>
-                </select>
+                  onChange={setUserCargo}
+                  className="mt-2"
+                  options={[
+                    { value: 'funcionario', label: 'Funcionário' },
+                    { value: 'supervisor', label: 'Supervisor' },
+                    { value: 'gestor', label: 'Gestor' },
+                    { value: 'direcao', label: 'Direção' },
+                  ]}
+                />
               </div>
               <div>
                 <label className={labelBlockClass}>Grupo</label>
-                <select
+                <GlassSelect
                   value={userGrupo}
-                  onChange={(e) => setUserGrupo(e.target.value)}
-                  className="glass-input mt-2"
-                >
-                  <option value="">(opcional)</option>
-                  {['A', 'B', 'C', 'D', 'E', 'F'].map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
+                  onChange={setUserGrupo}
+                  className="mt-2"
+                  options={[
+                    { value: '', label: '(opcional)' },
+                    ...['A', 'B', 'C', 'D', 'E', 'F'].map((g) => ({ value: g, label: g })),
+                  ]}
+                />
               </div>
               <div>
                 <label className={labelBlockClass}>Nick FiveM</label>

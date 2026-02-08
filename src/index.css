@@ -119,6 +119,33 @@
     background-color: #f8fafc;
     color: #1e293b;
   }
+  /* GlassSelect custom dropdown (lista aberta) */
+  .glass-select-dropdown {
+    @apply border-slate-600 bg-slate-800/95 shadow-xl;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  }
+  .glass-select-option {
+    @apply text-slate-200 transition-colors;
+  }
+  .glass-select-option:hover {
+    @apply bg-slate-600/70 text-white;
+  }
+  .glass-select-option[aria-selected="true"] {
+    @apply bg-sky-500/25 text-sky-200;
+  }
+  html.light .glass-select-dropdown {
+    @apply border-slate-200 bg-white shadow-xl;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  }
+  html.light .glass-select-option {
+    @apply text-slate-700;
+  }
+  html.light .glass-select-option:hover {
+    @apply bg-slate-100 text-slate-900;
+  }
+  html.light .glass-select-option[aria-selected="true"] {
+    @apply bg-sky-500/20 text-sky-700;
+  }
   /* Primary button */
   .btn-primary {
     @apply rounded-full bg-gradient-to-br from-sky-400 to-sky-600 px-5 py-2.5 font-semibold text-slate-900 shadow-lg transition hover:from-sky-500 hover:to-sky-700 hover:shadow-xl active:scale-[0.98];

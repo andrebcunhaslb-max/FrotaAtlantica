@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, User } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import GlassSelect from './GlassSelect'
 
 function formatChatTime(iso) {
   if (!iso) return '—'
@@ -69,19 +70,19 @@ export default function ContentPrivado() {
           <User className="h-4 w-4 shrink-0" />
           Conversar com
         </label>
-        <select
-          value={selectedUserId ?? ''}
-          onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : null)}
-          className={`glass-input mt-1 w-full max-w-[280px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}
+        <GlassSelect
+          value={String(selectedUserId ?? '')}
+          onChange={(v) => setSelectedUserId(v ? Number(v) : null)}
+          className="mt-1 max-w-[280px]"
           aria-label="Escolher destinatário"
-        >
-          <option value="">— Escolher pessoa —</option>
-          {otherUsers.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.nome || `Utilizador ${u.id}`}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: '', label: '— Escolher pessoa —' },
+            ...otherUsers.map((u) => ({
+              value: String(u.id),
+              label: u.nome || `Utilizador ${u.id}`,
+            })),
+          ]}
+        />
       </div>
       {!selectedUserId ? (
         <p className={`flex-1 px-5 text-sm ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>

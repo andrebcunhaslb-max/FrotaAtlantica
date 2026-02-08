@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Save } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import GlassSelect from './GlassSelect'
 
 export default function ContentVendas() {
   const { usuarios, registos, saveRegistos, showToast, isLight } = useApp()
@@ -54,18 +55,15 @@ export default function ContentVendas() {
             <label className={labelClass}>
               Funcionário
             </label>
-            <select
+            <GlassSelect
               value={vendedor}
-              onChange={(e) => setVendedor(e.target.value)}
-              className="glass-input mt-2"
-            >
-              <option value="">—</option>
-              {usuarios.map((u) => (
-                <option key={u.id ?? u.nome} value={u.nome}>
-                  {u.nome}
-                </option>
-              ))}
-            </select>
+              onChange={setVendedor}
+              className="mt-2"
+              options={[
+                { value: '', label: '—' },
+                ...usuarios.map((u) => ({ value: u.nome, label: u.nome })),
+              ]}
+            />
           </div>
           <div>
             <label className={labelClass}>
