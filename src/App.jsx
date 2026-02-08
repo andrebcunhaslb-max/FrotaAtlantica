@@ -11,6 +11,7 @@ import ContentCompras from './components/ContentCompras'
 import ContentFarm from './components/ContentFarm'
 import ContentChatUnified from './components/ContentChatUnified'
 import ContentAdmin from './components/ContentAdmin'
+import ContentNotas from './components/ContentNotas'
 import MiniRadioPlayer from './components/MiniRadioPlayer'
 import ContentDashboard from './components/ContentDashboard'
 import FiveMSidebar from './components/FiveMSidebar'
@@ -28,6 +29,7 @@ function MainLayout() {
         {activeTab === 'compras' && <ContentCompras />}
         {activeTab === 'farm' && <ContentFarm />}
         {activeTab === 'chat' && <ContentChatUnified />}
+        {activeTab === 'notas' && <ContentNotas />}
         {activeTab === 'admin' && <ContentAdmin />}
       </div>
       <FiveMSidebar />

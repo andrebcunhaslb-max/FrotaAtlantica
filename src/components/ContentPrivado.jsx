@@ -60,9 +60,6 @@ export default function ContentPrivado() {
   }
 
   const selectedUser = otherUsers.find((u) => String(u.id) === String(selectedUserId))
-  const msgClass = isLight
-    ? 'rounded-xl border border-slate-300 px-4 py-2.5 max-w-[85%]'
-    : 'rounded-xl border border-slate-600 px-4 py-2.5 max-w-[85%]'
 
   return (
     <div className="glass-card flex flex-col min-h-[320px] h-full">
@@ -105,17 +102,7 @@ export default function ContentPrivado() {
                   key={msg.id}
                   className={`flex ${isFromMe ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div
-                    className={`${msgClass} ${
-                      isFromMe
-                        ? isLight
-                          ? 'bg-sky-50 border-sky-300'
-                          : 'bg-sky-900/40 border-sky-600'
-                        : isLight
-                          ? 'bg-slate-50/80'
-                          : 'bg-slate-800/50'
-                    }`}
-                  >
+                  <div className={`${isFromMe ? 'msg-card msg-card-mine' : 'msg-card'} max-w-[85%]`}>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
                         {msg.userName}

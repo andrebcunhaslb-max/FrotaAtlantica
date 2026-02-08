@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Calculator, ShoppingCart, Package, Fish, MessageCircle, Settings, LayoutDashboard, LogOut } from 'lucide-react'
+import { Calculator, ShoppingCart, Package, Fish, MessageCircle, FileText, Settings, LayoutDashboard, LogOut } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const SIDEBAR_ITEMS = [
@@ -9,6 +9,7 @@ const SIDEBAR_ITEMS = [
   { id: 'compras', label: 'Comprar Peixes', Icon: Package },
   { id: 'farm', label: 'Farm', Icon: Fish },
   { id: 'chat', label: 'Chat', Icon: MessageCircle },
+  { id: 'notas', label: 'Bloco de Notas', Icon: FileText },
   { id: 'admin', label: 'Administração', Icon: Settings },
 ]
 

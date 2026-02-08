@@ -150,13 +150,6 @@ export default function ContentEquipa({ grupo }) {
 
   if (!grupo) return null
 
-  const msgClass = isLight
-    ? 'rounded-xl border border-slate-300 bg-slate-50/80 px-4 py-2.5'
-    : 'rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5'
-  const comClass = isLight
-    ? 'rounded-xl border border-amber-300 bg-amber-50/90 px-4 py-2.5'
-    : 'rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-2.5'
-
   return (
     <div className="glass-card flex flex-col min-h-[320px] h-full">
       <div className="flex flex-wrap items-center gap-3 mt-0 mb-3 px-5 pt-5">
@@ -210,7 +203,7 @@ export default function ContentEquipa({ grupo }) {
               </p>
             )}
             {chatEquipa.map((msg) => (
-              <div key={msg.id} className={`${msgClass} group`}>
+              <div key={msg.id} className="msg-card group">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{msg.userName}</span>
                   {msg.cargo && (
@@ -263,7 +256,7 @@ export default function ContentEquipa({ grupo }) {
               </p>
             )}
             {comunicadosEquipa.map((msg) => (
-              <div key={msg.id} className={`${comClass} group`}>
+              <div key={msg.id} className="com-card group">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Megaphone className={`h-3.5 w-3.5 shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
                   <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{msg.userName}</span>

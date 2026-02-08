@@ -86,6 +86,39 @@
   html.light .glass-input {
     @apply border-slate-300 bg-slate-50/80 text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-sky-500/25;
   }
+  /* Dropdown (select) elegante: seta custom, transições, tema */
+  select.glass-input {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem 1.25rem;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+  select.glass-input:hover {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+  select.glass-input:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+  html.light select.glass-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+  html.light select.glass-input:hover,
+  html.light select.glass-input:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+  select.glass-input option {
+    background-color: #1e293b;
+    color: #e2e8f0;
+  }
+  html.light select.glass-input option {
+    background-color: #f8fafc;
+    color: #1e293b;
+  }
   /* Primary button */
   .btn-primary {
     @apply rounded-full bg-gradient-to-br from-sky-400 to-sky-600 px-5 py-2.5 font-semibold text-slate-900 shadow-lg transition hover:from-sky-500 hover:to-sky-700 hover:shadow-xl active:scale-[0.98];
@@ -184,5 +217,25 @@
   }
   html.light .mini-radio-volume::-moz-range-thumb {
     @apply bg-sky-500;
+  }
+  /* Message cards (chat / slate) */
+  .msg-card {
+    @apply rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5;
+  }
+  html.light .msg-card {
+    @apply border-slate-300 bg-slate-50/80;
+  }
+  .msg-card-mine {
+    @apply border-sky-600 bg-sky-900/40;
+  }
+  html.light .msg-card-mine {
+    @apply border-sky-300 bg-sky-50;
+  }
+  /* Comunicados (amber) */
+  .com-card {
+    @apply rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-2.5;
+  }
+  html.light .com-card {
+    @apply border-amber-300 bg-amber-50/90;
   }
 }

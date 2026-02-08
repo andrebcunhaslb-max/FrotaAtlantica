@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   RefreshCw,
@@ -12,6 +12,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { apiGet, apiPost } from '../api'
 import DatePicker from './DatePicker'
 
 const SUBTABS = [
@@ -22,6 +23,7 @@ const SUBTABS = [
   { id: 'metas', label: 'Metas e Valor a Receber' },
   { id: 'pagamentos', label: 'Histórico de Pagamentos' },
   { id: 'armazem', label: 'Armazém Patrão', direcaoGestorOnly: true },
+  { id: 'notas', label: 'Bloco de Notas', direcaoOnly: true },
 ]
 
 function parseDataRegisto(str) {
@@ -120,6 +122,12 @@ export default function ContentAdmin() {
   const [filtroArmazemData, setFiltroArmazemData] = useState('')
   const [armazemTipo, setArmazemTipo] = useState('entrada')
   const [armazemRegistosDoDia, setArmazemRegistosDoDia] = useState([])
+  const [adminNotasContent, setAdminNotasContent] = useState('')
+  const [adminNotasSaving, setAdminNotasSaving] = useState(false)
+  const [adminNotasLoaded, setAdminNotasLoaded] = useState(false)
+  const adminNotasDebounceRef = useRef(null)
+  const ADMIN_NOTAS_DEBOUNCE_MS = 1200
+  const ADMIN_NOTAS_MAX_LENGTH = 50000
 
   const closeUserFormModal = useCallback(() => {
     setShowUserFormModal(false)
@@ -135,6 +143,63 @@ export default function ContentAdmin() {
   useEffect(() => {
     if (activeSubtab === 'caixa') setValorCaixaTotal(caixa != null ? String(caixa) : '')
   }, [activeSubtab, caixa])
+
+  useEffect(() => {
+    if (activeSubtab !== 'notas' || user?.cargo !== 'direcao' || !user?.id) {
+      if (activeSubtab !== 'notas') setAdminNotasLoaded(false)
+      return
+    }
+    let cancelled = false
+    apiGet('notas-admin?userId=' + encodeURIComponent(user.id))
+      .then((data) => {
+        if (!cancelled) {
+          setAdminNotasContent(typeof data?.content === 'string' ? data.content : '')
+          setAdminNotasLoaded(true)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAdminNotasContent('')
+          setAdminNotasLoaded(true)
+        }
+      })
+    return () => { cancelled = true }
+  }, [activeSubtab, user?.cargo, user?.id])
+
+  const saveAdminNotas = useCallback(
+    async (text) => {
+      if (!user?.id || user?.cargo !== 'direcao') return
+      setAdminNotasSaving(true)
+      try {
+        await apiPost('notas-admin', { userId: user.id, content: text })
+      } catch (err) {
+        console.warn('saveAdminNotas', err)
+      } finally {
+        setAdminNotasSaving(false)
+      }
+    },
+    [user?.id, user?.cargo]
+  )
+
+  const handleAdminNotasChange = (e) => {
+    const value = e.target.value
+    if (value.length > ADMIN_NOTAS_MAX_LENGTH) return
+    setAdminNotasContent(value)
+    if (adminNotasDebounceRef.current) clearTimeout(adminNotasDebounceRef.current)
+    adminNotasDebounceRef.current = setTimeout(() => saveAdminNotas(value), ADMIN_NOTAS_DEBOUNCE_MS)
+  }
+
+  const handleAdminNotasBlur = () => {
+    if (adminNotasDebounceRef.current) {
+      clearTimeout(adminNotasDebounceRef.current)
+      adminNotasDebounceRef.current = null
+    }
+    saveAdminNotas(adminNotasContent)
+  }
+
+  useEffect(() => () => {
+    if (adminNotasDebounceRef.current) clearTimeout(adminNotasDebounceRef.current)
+  }, [])
 
   useEffect(() => {
     if (activeSubtab !== 'armazem' || !filtroArmazemData) {
@@ -647,7 +712,7 @@ export default function ContentAdmin() {
       </button>
 
       <div className={`flex flex-wrap border-b mb-4 -mx-1 gap-1 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
-        {SUBTABS.filter((t) => !t.direcaoGestorOnly || user?.cargo === 'direcao' || user?.cargo === 'gestor').map(({ id, label }) => {
+        {SUBTABS.filter((t) => (!t.direcaoOnly || user?.cargo === 'direcao') && (!t.direcaoGestorOnly || user?.cargo === 'direcao' || user?.cargo === 'gestor')).map(({ id, label }) => {
           const active = activeSubtab === id
           return (
             <button
@@ -918,6 +983,36 @@ export default function ContentAdmin() {
               </tbody>
             </table>
           </div>
+        </>
+      )}
+
+      {activeSubtab === 'notas' && user?.cargo === 'direcao' && (
+        <>
+          <h3 className="text-base font-semibold mb-2">Bloco de Notas da Direção</h3>
+          <p className={mutedTextClassMb4}>
+            Notas partilhadas entre a direção. Só utilizadores com cargo &quot;direção&quot; podem ver e editar.
+          </p>
+          {!adminNotasLoaded ? (
+            <p className={mutedTextClass}>A carregar…</p>
+          ) : (
+            <>
+              <textarea
+                value={adminNotasContent}
+                onChange={handleAdminNotasChange}
+                onBlur={handleAdminNotasBlur}
+                placeholder="Notas da direção..."
+                className={`glass-input min-h-[240px] resize-y w-full ${isLight ? 'text-slate-900' : 'text-slate-200'}`}
+                maxLength={ADMIN_NOTAS_MAX_LENGTH}
+                aria-label="Bloco de notas da direção"
+              />
+              <div className="flex items-center justify-between mt-2 gap-2">
+                <span className={labelClass}>
+                  {adminNotasContent.length.toLocaleString('pt-PT')} / {ADMIN_NOTAS_MAX_LENGTH.toLocaleString('pt-PT')} caracteres
+                </span>
+                {adminNotasSaving && <span className={mutedTextClass}>A guardar…</span>}
+              </div>
+            </>
+          )}
         </>
       )}
 

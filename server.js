@@ -967,6 +967,77 @@ app.post('/api/comunicados', async (req, res) => {
   }
 });
 
+// Notas privadas por utilizador (bloco de notas no sidebar)
+app.get('/api/notas', async (req, res) => {
+  try {
+    const userId = typeof req.query.userId === 'string' ? req.query.userId.trim() : null;
+    if (!userId) return res.status(400).json({ error: 'Query userId é obrigatório' });
+    const data = await readJson('notas');
+    const byUser = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    const content = typeof byUser[userId] === 'string' ? byUser[userId] : '';
+    res.json({ content });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler notas' });
+  }
+});
+
+app.post('/api/notas', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const userId = body.userId != null ? String(body.userId).trim() : null;
+    const content = typeof body.content === 'string' ? body.content : '';
+    if (!userId) return res.status(400).json({ error: 'Corpo deve ter userId' });
+    const data = await readJson('notas');
+    const byUser = data && typeof data === 'object' && !Array.isArray(data) ? { ...data } : {};
+    byUser[userId] = content;
+    await writeJson('notas', byUser);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar notas' });
+  }
+});
+
+// Notas da direção (bloco de notas na Administração, só cargo direcao)
+function isDirecao(usuariosList, userId) {
+  const u = usuariosList.find((x) => String(x.id) === String(userId));
+  return u && (u.cargo || '').toLowerCase() === 'direcao';
+}
+
+app.get('/api/notas-admin', async (req, res) => {
+  try {
+    const userId = typeof req.query.userId === 'string' ? req.query.userId.trim() : null;
+    if (!userId) return res.status(400).json({ error: 'Query userId é obrigatório' });
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    if (!isDirecao(usuariosList, userId)) return res.status(403).json({ error: 'Apenas a direção pode aceder' });
+    const data = await readJson('notas-admin');
+    const content = data && typeof data.content === 'string' ? data.content : '';
+    res.json({ content });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler notas da direção' });
+  }
+});
+
+app.post('/api/notas-admin', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const userId = body.userId != null ? String(body.userId).trim() : null;
+    const content = typeof body.content === 'string' ? body.content : '';
+    if (!userId) return res.status(400).json({ error: 'Corpo deve ter userId' });
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    if (!isDirecao(usuariosList, userId)) return res.status(403).json({ error: 'Apenas a direção pode guardar' });
+    await writeJson('notas-admin', { content });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao guardar notas da direção' });
+  }
+});
+
 // SPA fallback: serve React app for non-file routes
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {

@@ -53,10 +53,6 @@ export default function ContentComunicados() {
     }
   }
 
-  const comClass = isLight
-    ? 'rounded-xl border border-amber-300 bg-amber-50/90 px-4 py-2.5'
-    : 'rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-2.5'
-
   return (
     <div className="glass-card flex flex-col min-h-[320px] h-full">
       <h2 className="text-lg font-semibold mt-0 mb-3 px-5 pt-5 flex items-center gap-2">
@@ -70,7 +66,7 @@ export default function ContentComunicados() {
           </p>
         )}
         {comunicadosGlobais.map((msg) => (
-          <div key={msg.id} className={`${comClass} group`}>
+          <div key={msg.id} className="com-card group">
             <div className="flex items-center gap-2 flex-wrap">
               <Megaphone className={`h-3.5 w-3.5 shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
               <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>

@@ -52,10 +52,7 @@ export default function ContentChat() {
           <p className={`text-sm py-4 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>Ainda não há mensagens. Envia a primeira.</p>
         )}
         {chatMessages.map((msg) => (
-          <div
-            key={msg.id}
-            className={isLight ? 'rounded-xl border border-slate-300 bg-slate-50/80 px-4 py-2.5' : 'rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5'}
-          >
+          <div key={msg.id} className="msg-card">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{msg.userName}</span>
               {msg.cargo && (

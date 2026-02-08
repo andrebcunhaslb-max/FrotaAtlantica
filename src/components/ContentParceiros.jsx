@@ -53,10 +53,6 @@ export default function ContentParceiros() {
     }
   }
 
-  const msgClass = isLight
-    ? 'rounded-xl border border-slate-300 bg-slate-50/80 px-4 py-2.5'
-    : 'rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5'
-
   return (
     <div className="glass-card flex flex-col min-h-[320px] h-full">
       <h2 className="text-lg font-semibold mt-0 mb-3 px-5 pt-5 flex items-center gap-2">
@@ -70,7 +66,7 @@ export default function ContentParceiros() {
           </p>
         )}
         {parceiros.map((msg) => (
-          <div key={msg.id} className={msgClass}>
+          <div key={msg.id} className="msg-card">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
                 {msg.userName}
