@@ -50,7 +50,16 @@ export function AppProvider({ children }) {
   const [chatMessages, setChatMessages] = useState([])
   const [chatEquipa, setChatEquipa] = useState([])
   const [comunicadosEquipa, setComunicadosEquipa] = useState([])
-  const [lastSeenComunicadoByGrupo, setLastSeenComunicadoByGrupo] = useState({})
+  const [lastSeenComunicadoByGrupo, setLastSeenComunicadoByGrupo] = useState(() => {
+    try {
+      const raw = localStorage.getItem('frota_lastSeenComunicadoByGrupo')
+      if (!raw) return {}
+      const o = JSON.parse(raw)
+      return typeof o === 'object' && o !== null ? o : {}
+    } catch {
+      return {}
+    }
+  })
   const [activeEquipaGrupo, setActiveEquipaGrupo] = useState(null)
   const [lastViewedChatGeralAt, setLastViewedChatGeralAt] = useState(() => {
     try {
@@ -349,18 +358,18 @@ export function AppProvider({ children }) {
     [user, loadChat, showToast]
   )
 
-  const loadChatEquipa = useCallback(async (grupo) => {
+  const loadChatEquipa = useCallback(async (grupo, updateDisplay = true) => {
     if (!grupo) return 0
     try {
       const list = await apiGet(`chat?grupo=${encodeURIComponent(grupo)}`)
       const arr = Array.isArray(list) ? list : []
-      setChatEquipa(arr)
       const maxTs = arr.length === 0 ? 0 : Math.max(...arr.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
       setLatestChatEquipaTsByGrupo((prev) => ({ ...prev, [grupo]: maxTs }))
+      if (updateDisplay) setChatEquipa(arr)
       return maxTs
     } catch (err) {
       console.warn('loadChatEquipa', err)
-      setChatEquipa([])
+      if (updateDisplay) setChatEquipa([])
       return 0
     }
   }, [])
@@ -455,9 +464,11 @@ export function AppProvider({ children }) {
     if (!grupo) return
     setLastSeenComunicadoByGrupo((prev) => {
       const arr = Array.isArray(list) ? list : comunicadosEquipa
-      if (!arr.length) return { ...prev, [grupo]: Date.now() }
-      const latest = Math.max(...arr.map((m) => new Date(m.timestamp || 0).getTime()))
-      return { ...prev, [grupo]: latest }
+      const next = !arr.length
+        ? { ...prev, [grupo]: Date.now() }
+        : { ...prev, [grupo]: Math.max(...arr.map((m) => new Date(m.timestamp || 0).getTime())) }
+      try { localStorage.setItem('frota_lastSeenComunicadoByGrupo', JSON.stringify(next)) } catch (_) {}
+      return next
     })
   }, [comunicadosEquipa])
 
@@ -525,19 +536,27 @@ export function AppProvider({ children }) {
     [latestChatEquipaTsByGrupo, hasUnreadChatEquipaForGrupo]
   )
 
-  // Chat equipa: carregar em background para o grupo do utilizador (notificação "por ler" quando outro escreve)
+  // Chat equipa: carregar em background para todas as equipas (notificação "por ler" quando membros de qualquer equipa escrevem)
   useEffect(() => {
-    const grupo = activeEquipaGrupo || (user?.grupo || '').trim()
-    if (!grupo) return
-    loadChatEquipa(grupo)
-    const id = setInterval(() => loadChatEquipa(grupo), 5000)
-    const onFocus = () => loadChatEquipa(grupo)
+    if (!user) return
+    const gruposDoUser = [
+      ...new Set([
+        (user?.grupo || '').trim(),
+        (activeEquipaGrupo || '').trim(),
+        ...(usuarios || []).map((u) => (u?.grupo || '').trim()).filter(Boolean)
+      ])
+    ].filter(Boolean)
+    if (gruposDoUser.length === 0) return
+    const loadAll = () => gruposDoUser.forEach((g) => loadChatEquipa(g, false))
+    loadAll()
+    const id = setInterval(loadAll, 5000)
+    const onFocus = () => loadAll()
     window.addEventListener('focus', onFocus)
     return () => {
       clearInterval(id)
       window.removeEventListener('focus', onFocus)
     }
-  }, [user?.grupo, activeEquipaGrupo, loadChatEquipa])
+  }, [user?.grupo, activeEquipaGrupo, usuarios, loadChatEquipa])
 
   const login = useCallback((u) => {
     setUser(u)

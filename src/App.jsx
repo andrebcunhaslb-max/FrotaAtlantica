@@ -11,6 +11,7 @@ import ContentCompras from './components/ContentCompras'
 import ContentFarm from './components/ContentFarm'
 import ContentChatUnified from './components/ContentChatUnified'
 import ContentAdmin from './components/ContentAdmin'
+import MiniRadioPlayer from './components/MiniRadioPlayer'
 import ContentDashboard from './components/ContentDashboard'
 import FiveMSidebar from './components/FiveMSidebar'
 
@@ -55,7 +56,10 @@ function AppContent() {
       ) : (
         <>
           <Topbar />
-          <MainLayout />
+          <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+            <MainLayout />
+            <MiniRadioPlayer />
+          </div>
         </>
       )}
     </main>
