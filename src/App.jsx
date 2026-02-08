@@ -14,6 +14,7 @@ import ContentAdmin from './components/ContentAdmin'
 import ContentNotas from './components/ContentNotas'
 import MiniRadioPlayer from './components/MiniRadioPlayer'
 import ContentDashboard from './components/ContentDashboard'
+import ComunicadoGeralAlert from './components/ComunicadoGeralAlert'
 import FiveMSidebar from './components/FiveMSidebar'
 
 function MainLayout() {
@@ -23,6 +24,7 @@ function MainLayout() {
     <div className="flex flex-1 min-h-0 min-w-0">
       <AppSidebar />
       <div className="flex-1 min-w-0 py-3 px-3 sm:py-4 sm:px-4 md:py-5 md:px-6 transition duration-400 flex flex-col min-h-0 overflow-auto">
+        <ComunicadoGeralAlert />
         {activeTab === 'dashboard' && <ContentDashboard />}
         {activeTab === 'calc' && <ContentCalc />}
         {activeTab === 'vendas' && <ContentVendas />}

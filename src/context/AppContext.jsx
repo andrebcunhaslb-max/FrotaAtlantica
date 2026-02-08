@@ -885,6 +885,7 @@ export function AppProvider({ children }) {
     setSidebarOpen,
     activeEquipaGrupo,
     setActiveEquipaGrupo,
+    chatViewingState,
     setChatViewingState,
     hasUnreadChatGeral,
     hasUnreadChatEquipa,

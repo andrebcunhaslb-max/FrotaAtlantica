@@ -11,6 +11,7 @@ export default function ContentChatUnified() {
     user,
     activeEquipaGrupo,
     isLight,
+    chatViewingState,
     setChatViewingState,
     hasUnreadChatGeral,
     hasUnreadChatEquipa,
@@ -24,8 +25,29 @@ export default function ContentChatUnified() {
   const grupo = activeEquipaGrupo || user?.grupo
   const [activeTab, setActiveTab] = useState('geral')
 
+  // Sync context → local: when banner (or elsewhere) sets chatViewingState, show that sub-tab
+  const validTabs = ['geral', 'equipa', 'privado', 'parceiros', 'comunicados']
+  useEffect(() => {
+    if (chatViewingState && validTabs.includes(chatViewingState)) {
+      setActiveTab(chatViewingState)
+    }
+  }, [chatViewingState])
+
+  // #region agent log
+  if (chatViewingState === 'comunicados' || activeTab === 'comunicados') {
+    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ContentChatUnified.jsx:render',message:'ChatUnified state',data:{chatViewingState,activeTab,panelShown:activeTab},timestamp:Date.now(),hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
+  }
+  // #endregion
+
   useEffect(() => {
     const state = activeTab
+    // Don't overwrite context when it was set externally (e.g. banner): let context→local sync run first
+    if (chatViewingState && validTabs.includes(chatViewingState) && chatViewingState !== state) {
+      return
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ContentChatUnified.jsx:useEffect',message:'syncing activeTab to setChatViewingState',data:{activeTab:state,settingState:state},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     if (state === 'equipa' && grupo) {
       setChatViewingState('equipa', grupo)
     } else if (state === 'geral') {
@@ -37,7 +59,7 @@ export default function ContentChatUnified() {
     } else if (state === 'privado') {
       setChatViewingState('privado')
     }
-  }, [activeTab, grupo, setChatViewingState])
+  }, [activeTab, grupo, setChatViewingState, chatViewingState])
   useEffect(() => () => setChatViewingState(null), [setChatViewingState])
 
   const tabBorder = isLight ? 'border-slate-200' : 'border-slate-600'

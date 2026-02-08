@@ -32,6 +32,9 @@ export default function ContentComunicados() {
   }, [loadComunicadosGlobais, setChatViewingState])
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9580856c-7f30-4bf9-a5d2-e0418a6e2a45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ContentComunicados.jsx:scrollEffect',message:'scroll to end',data:{comunicadosLength:comunicadosGlobais?.length,hasListEndRef:!!listEndRef.current},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [comunicadosGlobais])
 
