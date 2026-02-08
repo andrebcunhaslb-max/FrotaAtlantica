@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Volume2, VolumeX, ChevronLeft, ChevronRight, List, Radio, Minus, Plus } from 'lucide-react'
+import { Volume2, VolumeX, ChevronLeft, ChevronRight, List, Radio, Play, Pause, Search } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const RADIO_BROWSER_API = 'https://de1.api.radio-browser.info'
@@ -14,17 +14,39 @@ const FALLBACK_RADIOS = [
   { id: 'rfm-90s', name: '90\'s RFM', streamUrl: 'https://25343.live.streamtheworld.com/RFM_90SAAC.aac' },
   { id: 'cascais', name: '105.4 Cascais - O Rock da Linha', streamUrl: 'https://play.radioregional.pt:8220/stream/2/;;/stream.mp3' },
   { id: 'renascenca', name: 'Renascença', streamUrl: 'https://stream.renascenca.pt/rc.mp3' },
+  { id: 'cidade', name: 'Radio Cidade', streamUrl: 'https://stream-icy.bauermedia.pt/cidade.mp3' },
+  { id: 'orbital', name: 'Radio Orbital', streamUrl: 'https://ec2.yesstreaming.net:3025/stream' },
+  { id: 'mega', name: 'Radio Mega', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/MEGA_HITS_SC' },
 ]
 
-const VOLUME_STEP = 0.1
+// Rádios fixas que devem aparecer sempre na lista (mesmo quando a API carrega outras)
+const FIXED_RADIOS = [
+  { id: 'cidade', name: 'Radio Cidade', streamUrl: 'https://stream-icy.bauermedia.pt/cidade.mp3' },
+  { id: 'orbital', name: 'Radio Orbital', streamUrl: 'https://ec2.yesstreaming.net:3025/stream' },
+  { id: 'mega', name: 'Radio Mega', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/MEGA_HITS_SC' },
+]
+
+function mergeStationsWithFixed(apiList) {
+  const fixedIds = new Set(FIXED_RADIOS.map((r) => r.id))
+  const fixedNames = new Set(FIXED_RADIOS.map((r) => (r.name || '').trim().toLowerCase()))
+  const seen = new Set(fixedNames)
+  const filtered = (apiList || []).filter((r) => {
+    if (fixedIds.has(r.id)) return false
+    const name = (r.name || '').trim().toLowerCase()
+    if (fixedNames.has(name) || seen.has(name)) return false
+    seen.add(name)
+    return true
+  })
+  return [...FIXED_RADIOS, ...filtered]
+}
 
 function parseCachedStations() {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (!raw) return null
     const { data, at } = JSON.parse(raw)
-    if (Array.isArray(data) && data.length > 0 && Date.now() - at < CACHE_TTL_MS) {
-      return data
+    if (Array.isArray(data) && Date.now() - at < CACHE_TTL_MS) {
+      return mergeStationsWithFixed(data.length > 0 ? data : [])
     }
   } catch (_) {}
   return null
@@ -63,6 +85,8 @@ export default function MiniRadioPlayer() {
   const [muted, setMuted] = useState(false)
   const volumeBeforeMute = useRef(0.7)
   const [listOpen, setListOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isPlaying, setIsPlaying] = useState(false)
   const userInitiatedPlay = useRef(false)
 
   const currentStation = stations[stationIndex]
@@ -71,7 +95,7 @@ export default function MiniRadioPlayer() {
     if (parseCachedStations()) return
     const ac = new AbortController()
     fetch(
-      `${RADIO_BROWSER_API}/json/stations/search?countrycode=PT&language=portuguese&limit=25&order=votes&reverse=true`,
+      `${RADIO_BROWSER_API}/json/stations/search?countrycode=PT&limit=500&order=votes&reverse=true`,
       { signal: ac.signal, headers: { 'User-Agent': 'FrotaAtlantica/1.0' } }
     )
       .then((res) => res.json())
@@ -79,15 +103,18 @@ export default function MiniRadioPlayer() {
         if (!Array.isArray(arr) || arr.length === 0) return
         const seen = new Set()
         const list = arr
-          .filter((s) => s.url_resolved && s.url_resolved.startsWith('https://') && !seen.has(s.name?.trim()))
-          .slice(0, 20)
-          .map((s) => {
-            seen.add(s.name?.trim())
-            return { id: s.stationuuid || s.name, name: (s.name || '').trim() || 'Rádio', streamUrl: s.url_resolved }
+          .filter((s) => {
+            if (!s.url_resolved || !s.url_resolved.startsWith('https://')) return false
+            const name = (s.name || '').trim()
+            if (!name || seen.has(name.toLowerCase())) return false
+            seen.add(name.toLowerCase())
+            return true
           })
-        if (list.length > 0) {
-          setStations(list)
-          saveCachedStations(list)
+          .map((s) => ({ id: s.stationuuid || s.name, name: (s.name || '').trim() || 'Rádio', streamUrl: s.url_resolved }))
+        const merged = mergeStationsWithFixed(list.length > 0 ? list : [])
+        if (merged.length > 0) {
+          setStations(merged)
+          saveCachedStations(merged)
         }
       })
       .catch(() => {})
@@ -121,6 +148,7 @@ export default function MiniRadioPlayer() {
     const audio = audioRef.current
     if (!audio || !currentStation?.streamUrl) return
     audio.pause()
+    setIsPlaying(false)
     audio.src = currentStation.streamUrl
     audio.load()
     if (userInitiatedPlay.current) {
@@ -138,12 +166,26 @@ export default function MiniRadioPlayer() {
     }
   }, [stationIndex, currentStation?.streamUrl, showToast])
 
-  const handleVolumeDown = useCallback(() => {
-    setVolume((v) => Math.max(0, v - VOLUME_STEP))
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
+    audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
+    return () => {
+      audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
+    }
   }, [])
-  const handleVolumeUp = useCallback(() => {
-    setVolume((v) => Math.min(1, v + VOLUME_STEP))
-  }, [])
+
+  const handleVolumeChange = useCallback((e) => {
+    const v = parseFloat(e.target.value) || 0
+    setVolume(Math.max(0, Math.min(1, v)))
+    if (muted && v > 0) {
+      setMuted(false)
+    }
+  }, [muted])
   const handleMute = useCallback(() => {
     if (muted) {
       setVolume(volumeBeforeMute.current)
@@ -167,6 +209,22 @@ export default function MiniRadioPlayer() {
     setStationIndex(index)
     setListOpen(false)
   }, [])
+
+  const handlePlayPause = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    userInitiatedPlay.current = true
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    } else {
+      audio.play().catch((err) => {
+        console.warn('MiniRadioPlayer play', err)
+        showToast?.('Se o som não iniciar, escolhe outra rádio na lista.', 'error')
+      })
+      setIsPlaying(true)
+    }
+  }, [isPlaying, showToast])
   const handleAudioError = useCallback(() => {
     showToast?.('Erro a reproduzir esta rádio. Tenta outra.', 'error')
   }, [showToast])
@@ -199,20 +257,36 @@ export default function MiniRadioPlayer() {
           <button type="button" onClick={handlePrev} className={btnClass} aria-label="Rádio anterior" title="Rádio anterior">
             <ChevronLeft className="h-4 w-4" />
           </button>
+          <button
+            type="button"
+            onClick={handlePlayPause}
+            className={`${btnClass} p-2.5 ${isPlaying ? '' : ''}`}
+            aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+            title={isPlaying ? 'Pausar' : 'Reproduzir'}
+          >
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+          </button>
           <button type="button" onClick={handleNext} className={btnClass} aria-label="Próxima rádio" title="Próxima rádio">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={handleVolumeDown} className={btnClass} aria-label="Diminuir volume" title="Diminuir volume">
-            <Minus className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={handleVolumeUp} className={btnClass} aria-label="Aumentar volume" title="Aumentar volume">
-            <Plus className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={handleMute} className={btnClass} aria-label={muted ? 'Desativar mute' : 'Mute'} title={muted ? 'Desativar mute' : 'Mute'}>
+        <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:min-w-[180px] sm:max-w-[220px]">
+          <button type="button" onClick={handleMute} className={`${btnClass} shrink-0`} aria-label={muted ? 'Desativar mute' : 'Mute'} title={muted ? 'Desativar mute' : 'Mute'}>
             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
+          <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer group">
+            <span className="sr-only">Volume</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={muted ? 0 : volume}
+              onChange={handleVolumeChange}
+              className="mini-radio-volume w-full"
+              aria-label="Volume"
+            />
+          </label>
         </div>
         <div className="relative ml-auto">
           <button
@@ -229,26 +303,55 @@ export default function MiniRadioPlayer() {
             <>
               <div className="fixed inset-0 z-10" aria-hidden onClick={() => setListOpen(false)} />
               <div
-                className={`absolute bottom-full left-0 mb-1 w-64 max-h-64 overflow-y-auto rounded-xl border ${listBg} shadow-xl z-20`}
+                className={`absolute bottom-full right-0 mb-1 min-w-[200px] w-72 max-w-[min(90vw,320px)] max-h-[70vh] overflow-y-auto rounded-xl border ${listBg} shadow-xl z-20`}
                 role="listbox"
                 aria-label="Escolher rádio"
               >
-                <p className={`text-xs font-medium uppercase tracking-wider px-3 py-2 border-b ${isLight ? 'text-slate-500 border-slate-200' : 'text-slate-400 border-slate-600'}`}>
+                <p className={`text-xs font-medium uppercase tracking-wider px-3 py-2 border-b whitespace-nowrap ${isLight ? 'text-slate-500 border-slate-200' : 'text-slate-400 border-slate-600'}`}>
                   Rádios PT
                 </p>
+                <div className={`p-2 border-b ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
+                  <label className={`flex items-center gap-2 w-full rounded-lg border px-2.5 py-1.5 text-sm bg-transparent focus-within:ring-2 focus-within:ring-sky-500/30 ${isLight ? 'border-slate-200' : 'border-slate-600'}`}>
+                    <Search className={`h-3.5 w-3.5 shrink-0 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Procurar por nome..."
+                      className={`flex-1 min-w-0 bg-transparent outline-none ${isLight ? 'text-slate-800 placeholder-slate-400' : 'text-slate-200 placeholder-slate-500'}`}
+                      aria-label="Procurar rádio por nome"
+                    />
+                  </label>
+                </div>
                 <div className="p-1">
-                  {stations.map((r, idx) => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      role="option"
-                      aria-selected={idx === stationIndex}
-                      onClick={() => handleSelectStation(idx)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${idx === stationIndex ? (isLight ? 'bg-sky-100 text-sky-800 font-medium' : 'bg-sky-900/40 text-sky-200 font-medium') : isLight ? 'hover:bg-slate-100 text-slate-800' : 'hover:bg-slate-700 text-slate-200'}`}
-                    >
-                      {r.name}
-                    </button>
-                  ))}
+                  {(() => {
+                    const filtered = stations.filter(
+                      (r) => !searchQuery.trim() || (r.name || '').toLowerCase().includes(searchQuery.trim().toLowerCase())
+                    )
+                    if (filtered.length === 0) {
+                      return (
+                        <p className={`px-3 py-4 text-sm text-center ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          Nenhuma rádio encontrada
+                        </p>
+                      )
+                    }
+                    return filtered.map((r) => {
+                      const idx = stations.findIndex((s) => s.id === r.id)
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          role="option"
+                          aria-selected={idx === stationIndex}
+                          onClick={() => handleSelectStation(idx)}
+                          title={r.name}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition break-words whitespace-normal ${idx === stationIndex ? (isLight ? 'bg-sky-100 text-sky-800 font-medium' : 'bg-sky-900/40 text-sky-200 font-medium') : isLight ? 'hover:bg-slate-100 text-slate-800' : 'hover:bg-slate-700 text-slate-200'}`}
+                        >
+                          {r.name}
+                        </button>
+                      )
+                    })
+                  })()}
                 </div>
               </div>
             </>

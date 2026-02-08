@@ -81,7 +81,41 @@ export function AppProvider({ children }) {
     }
   })
   const [latestChatEquipaTsByGrupo, setLatestChatEquipaTsByGrupo] = useState({})
-  const [chatViewingState, setChatViewingStateInternal] = useState(null) // 'geral' | 'equipa' | null
+  const [chatViewingState, setChatViewingStateInternal] = useState(null) // 'geral' | 'equipa' | 'privado' | 'parceiros' | 'comunicados' | null
+  const [chatPrivado, setChatPrivado] = useState([])
+  const [parceiros, setParceiros] = useState([])
+  const [comunicadosGlobais, setComunicadosGlobais] = useState([])
+  const [lastViewedChatPrivadoByUser, setLastViewedChatPrivadoByUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem('frota_lastViewedChatPrivadoByUser')
+      if (!raw) return {}
+      const o = JSON.parse(raw)
+      return typeof o === 'object' && o !== null ? o : {}
+    } catch {
+      return {}
+    }
+  })
+  const [lastViewedParceirosAt, setLastViewedParceirosAt] = useState(() => {
+    try {
+      const v = localStorage.getItem('frota_lastViewedParceirosAt')
+      const n = v ? parseInt(v, 10) : 0
+      return Number.isFinite(n) ? n : 0
+    } catch {
+      return 0
+    }
+  })
+  const [lastViewedComunicadosGlobaisAt, setLastViewedComunicadosGlobaisAt] = useState(() => {
+    try {
+      const v = localStorage.getItem('frota_lastViewedComunicadosGlobaisAt')
+      const n = v ? parseInt(v, 10) : 0
+      return Number.isFinite(n) ? n : 0
+    } catch {
+      return 0
+    }
+  })
+  const [latestChatPrivadoTsByUser, setLatestChatPrivadoTsByUser] = useState({})
+  const [latestParceirosTs, setLatestParceirosTs] = useState(0)
+  const [latestComunicadosGlobaisTs, setLatestComunicadosGlobaisTs] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -481,6 +515,133 @@ export function AppProvider({ children }) {
     [comunicadosEquipa, lastSeenComunicadoByGrupo]
   )
 
+  const loadChatPrivado = useCallback(
+    async (withUserId) => {
+      if (!user || !withUserId) return 0
+      try {
+        const list = await apiGet(
+          `chat-privado?userId=${encodeURIComponent(user.id)}&with=${encodeURIComponent(withUserId)}`
+        )
+        const arr = Array.isArray(list) ? list : []
+        setChatPrivado(arr)
+        const maxTs =
+          arr.length === 0 ? 0 : Math.max(...arr.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+        setLatestChatPrivadoTsByUser((prev) => ({ ...prev, [String(withUserId)]: maxTs }))
+        return maxTs
+      } catch (err) {
+        console.warn('loadChatPrivado', err)
+        setChatPrivado([])
+        return 0
+      }
+    },
+    [user]
+  )
+
+  const sendChatPrivado = useCallback(
+    async (toUserId, text) => {
+      if (!user || !toUserId || !String(text).trim()) return
+      try {
+        await apiPost('chat-privado', {
+          userId: user.id,
+          userName: user.nome,
+          toUserId: String(toUserId),
+          text: String(text).trim()
+        })
+        const maxTs = (await loadChatPrivado(toUserId)) ?? 0
+        const t = Math.max(Date.now(), maxTs)
+        setLastViewedChatPrivadoByUser((prev) => {
+          const next = { ...prev, [String(toUserId)]: t }
+          try {
+            localStorage.setItem('frota_lastViewedChatPrivadoByUser', JSON.stringify(next))
+          } catch (_) {}
+          return next
+        })
+      } catch (err) {
+        console.warn('sendChatPrivado', err)
+        showToast(err.message || 'Erro ao enviar mensagem.', 'error')
+      }
+    },
+    [user, loadChatPrivado, showToast]
+  )
+
+  const loadParceiros = useCallback(async () => {
+    try {
+      const list = await apiGet('parceiros')
+      const arr = Array.isArray(list) ? list : []
+      setParceiros(arr)
+      const maxTs =
+        arr.length === 0 ? 0 : Math.max(...arr.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+      setLatestParceirosTs(maxTs)
+      return maxTs
+    } catch (err) {
+      console.warn('loadParceiros', err)
+      setParceiros([])
+      return 0
+    }
+  }, [])
+
+  const sendParceiros = useCallback(
+    async (text) => {
+      if (!user || !String(text).trim()) return
+      try {
+        await apiPost('parceiros', {
+          userId: user.id,
+          userName: user.nome,
+          text: String(text).trim()
+        })
+        const maxTs = (await loadParceiros()) ?? 0
+        const t = Math.max(Date.now(), maxTs)
+        setLastViewedParceirosAt(t)
+        try {
+          localStorage.setItem('frota_lastViewedParceirosAt', String(t))
+        } catch (_) {}
+      } catch (err) {
+        console.warn('sendParceiros', err)
+        showToast(err.message || 'Erro ao publicar.', 'error')
+      }
+    },
+    [user, loadParceiros, showToast]
+  )
+
+  const loadComunicadosGlobais = useCallback(async () => {
+    try {
+      const list = await apiGet('comunicados-globais')
+      const arr = Array.isArray(list) ? list : []
+      setComunicadosGlobais(arr)
+      const maxTs =
+        arr.length === 0 ? 0 : Math.max(...arr.map((m) => (m?.timestamp ? new Date(m.timestamp).getTime() : 0)))
+      setLatestComunicadosGlobaisTs(maxTs)
+      return maxTs
+    } catch (err) {
+      console.warn('loadComunicadosGlobais', err)
+      setComunicadosGlobais([])
+      return 0
+    }
+  }, [])
+
+  const sendComunicadosGlobais = useCallback(
+    async (text) => {
+      if (!user || !String(text).trim()) return
+      try {
+        await apiPost('comunicados-globais', {
+          userId: user.id,
+          userName: user.nome,
+          text: String(text).trim()
+        })
+        const maxTs = (await loadComunicadosGlobais()) ?? 0
+        const t = Math.max(Date.now(), maxTs)
+        setLastViewedComunicadosGlobaisAt(t)
+        try {
+          localStorage.setItem('frota_lastViewedComunicadosGlobaisAt', String(t))
+        } catch (_) {}
+      } catch (err) {
+        console.warn('sendComunicadosGlobais', err)
+        showToast(err.message || 'Erro ao publicar.', 'error')
+      }
+    },
+    [user, loadComunicadosGlobais, showToast]
+  )
+
   useEffect(() => {
     const grupo = (user?.grupo || '').trim() || activeEquipaGrupo
     if (!grupo) return
@@ -502,18 +663,31 @@ export function AppProvider({ children }) {
     }
   }, [user, loadChat])
 
-  const setChatViewingState = useCallback((state, equipoGrupo) => {
+  const setChatViewingState = useCallback((state, equipoGrupoOrPrivadoUserId) => {
     setChatViewingStateInternal(state)
     const t = Date.now()
     if (state === 'geral') {
       setLastViewedChatGeralAt(t)
       try { localStorage.setItem('frota_lastViewedChatGeralAt', String(t)) } catch (_) {}
-    } else if (state === 'equipa' && equipoGrupo) {
+    } else if (state === 'equipa' && equipoGrupoOrPrivadoUserId) {
       setLastViewedChatEquipaByGrupo((prev) => {
-        const next = { ...prev, [equipoGrupo]: t }
+        const next = { ...prev, [equipoGrupoOrPrivadoUserId]: t }
         try { localStorage.setItem('frota_lastViewedChatEquipaByGrupo', JSON.stringify(next)) } catch (_) {}
         return next
       })
+    } else if (state === 'privado' && equipoGrupoOrPrivadoUserId) {
+      const uid = String(equipoGrupoOrPrivadoUserId)
+      setLastViewedChatPrivadoByUser((prev) => {
+        const next = { ...prev, [uid]: t }
+        try { localStorage.setItem('frota_lastViewedChatPrivadoByUser', JSON.stringify(next)) } catch (_) {}
+        return next
+      })
+    } else if (state === 'parceiros') {
+      setLastViewedParceirosAt(t)
+      try { localStorage.setItem('frota_lastViewedParceirosAt', String(t)) } catch (_) {}
+    } else if (state === 'comunicados') {
+      setLastViewedComunicadosGlobaisAt(t)
+      try { localStorage.setItem('frota_lastViewedComunicadosGlobaisAt', String(t)) } catch (_) {}
     }
   }, [])
 
@@ -534,6 +708,24 @@ export function AppProvider({ children }) {
   const hasUnreadChatEquipa = useMemo(
     () => Object.keys(latestChatEquipaTsByGrupo).some((g) => hasUnreadChatEquipaForGrupo(g)),
     [latestChatEquipaTsByGrupo, hasUnreadChatEquipaForGrupo]
+  )
+
+  const hasUnreadChatPrivado = useMemo(
+    () =>
+      Object.keys(latestChatPrivadoTsByUser).some(
+        (uid) => (latestChatPrivadoTsByUser[uid] || 0) > (lastViewedChatPrivadoByUser[uid] || 0)
+      ),
+    [latestChatPrivadoTsByUser, lastViewedChatPrivadoByUser]
+  )
+
+  const hasUnreadParceiros = useMemo(
+    () => latestParceirosTs > lastViewedParceirosAt && chatViewingState !== 'parceiros',
+    [latestParceirosTs, lastViewedParceirosAt, chatViewingState]
+  )
+
+  const hasUnreadComunicadosGlobais = useMemo(
+    () => latestComunicadosGlobaisTs > lastViewedComunicadosGlobaisAt && chatViewingState !== 'comunicados',
+    [latestComunicadosGlobaisTs, lastViewedComunicadosGlobaisAt, chatViewingState]
   )
 
   // Chat equipa: carregar em background para todas as equipas (notificação "por ler" quando membros de qualquer equipa escrevem)
@@ -557,6 +749,25 @@ export function AppProvider({ children }) {
       window.removeEventListener('focus', onFocus)
     }
   }, [user?.grupo, activeEquipaGrupo, usuarios, loadChatEquipa])
+
+  useEffect(() => {
+    if (!user) return
+    loadParceiros()
+    loadComunicadosGlobais()
+    const id = setInterval(() => {
+      loadParceiros()
+      loadComunicadosGlobais()
+    }, 5000)
+    const onFocus = () => {
+      loadParceiros()
+      loadComunicadosGlobais()
+    }
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [user, loadParceiros, loadComunicadosGlobais])
 
   const login = useCallback((u) => {
     setUser(u)
@@ -678,6 +889,18 @@ export function AppProvider({ children }) {
     hasUnreadChatGeral,
     hasUnreadChatEquipa,
     hasUnreadChatEquipaForGrupo,
+    chatPrivado,
+    loadChatPrivado,
+    sendChatPrivado,
+    parceiros,
+    loadParceiros,
+    sendParceiros,
+    comunicadosGlobais,
+    loadComunicadosGlobais,
+    sendComunicadosGlobais,
+    hasUnreadChatPrivado,
+    hasUnreadParceiros,
+    hasUnreadComunicadosGlobais,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

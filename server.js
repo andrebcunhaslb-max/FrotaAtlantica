@@ -430,6 +430,51 @@ app.get('/api/comunicados', async (req, res) => {
   }
 });
 
+const CHAT_PRIVADO_MAX = 500;
+const PARCEIROS_MAX = 200;
+const COMUNICADOS_GLOBAIS_MAX = 200;
+
+app.get('/api/chat-privado', async (req, res) => {
+  try {
+    const userId = typeof req.query.userId === 'string' ? req.query.userId.trim() : null;
+    const withId = typeof req.query.with === 'string' ? req.query.with.trim() : null;
+    if (!userId || !withId) return res.json([]);
+    const data = await readJson('chat-privado');
+    const list = Array.isArray(data) ? data : [];
+    const filtered = list.filter(
+      (m) =>
+        (String(m.fromUserId) === userId && String(m.toUserId) === withId) ||
+        (String(m.fromUserId) === withId && String(m.toUserId) === userId)
+    );
+    res.json(filtered.slice(-CHAT_PRIVADO_MAX));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler mensagens privadas' });
+  }
+});
+
+app.get('/api/parceiros', async (req, res) => {
+  try {
+    const data = await readJson('parceiros');
+    const list = Array.isArray(data) ? data : [];
+    res.json(list.slice(-PARCEIROS_MAX));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler parceiros' });
+  }
+});
+
+app.get('/api/comunicados-globais', async (req, res) => {
+  try {
+    const data = await readJson('comunicados-globais');
+    const list = Array.isArray(data) ? data : [];
+    res.json(list.slice(-COMUNICADOS_GLOBAIS_MAX));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao ler comunicados globais' });
+  }
+});
+
 // FiveM players proxy (avoids CORS from browser)
 app.get('/api/fivem-players', async (req, res) => {
   const code = req.query.code || '875vq5';
@@ -711,6 +756,104 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao guardar mensagem' });
+  }
+});
+
+app.post('/api/chat-privado', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body.text !== 'string' || !body.userId || !body.userName || body.toUserId == null) {
+      return res.status(400).json({ error: 'Corpo deve ter userId, userName, toUserId e text' });
+    }
+    const text = String(body.text).trim();
+    if (!text) return res.status(400).json({ error: 'text não pode estar vazio' });
+    const fromUserId = String(body.userId);
+    const toUserId = String(body.toUserId);
+    if (fromUserId === toUserId) return res.status(400).json({ error: 'Não podes enviar mensagem a ti próprio' });
+    const message = {
+      id: Date.now() + Math.random(),
+      fromUserId,
+      toUserId,
+      userName: String(body.userName),
+      text,
+      timestamp: new Date().toISOString()
+    };
+    const data = await readJson('chat-privado');
+    const list = Array.isArray(data) ? data : [];
+    list.push(message);
+    await writeJson('chat-privado', list.slice(-CHAT_PRIVADO_MAX));
+    res.json({ ok: true, message });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao enviar mensagem privada' });
+  }
+});
+
+function isDirecaoOnly(usuariosList, userId) {
+  const u = usuariosList.find((x) => String(x.id) === String(userId));
+  if (!u) return false;
+  return (u.cargo || '').toLowerCase() === 'direcao';
+}
+
+app.post('/api/parceiros', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body.text !== 'string' || !body.userId || !body.userName) {
+      return res.status(400).json({ error: 'Corpo deve ter userId, userName e text' });
+    }
+    const text = String(body.text).trim();
+    if (!text) return res.status(400).json({ error: 'text não pode estar vazio' });
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    if (!isDirecaoOnly(usuariosList, body.userId)) {
+      return res.status(403).json({ error: 'Apenas a direção pode publicar em Parceiros' });
+    }
+    const msg = {
+      id: Date.now() + Math.random(),
+      userId: body.userId,
+      userName: String(body.userName),
+      text,
+      timestamp: new Date().toISOString()
+    };
+    const data = await readJson('parceiros');
+    const list = Array.isArray(data) ? data : [];
+    list.push(msg);
+    await writeJson('parceiros', list.slice(-PARCEIROS_MAX));
+    res.json({ ok: true, message: msg });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao publicar em Parceiros' });
+  }
+});
+
+app.post('/api/comunicados-globais', async (req, res) => {
+  try {
+    const body = req.body;
+    if (body == null || typeof body.text !== 'string' || !body.userId || !body.userName) {
+      return res.status(400).json({ error: 'Corpo deve ter userId, userName e text' });
+    }
+    const text = String(body.text).trim();
+    if (!text) return res.status(400).json({ error: 'text não pode estar vazio' });
+    const usuariosData = await readJson('usuarios');
+    const usuariosList = Array.isArray(usuariosData) ? usuariosData : [];
+    if (!isDirecaoOnly(usuariosList, body.userId)) {
+      return res.status(403).json({ error: 'Apenas a direção pode publicar Comunicados globais' });
+    }
+    const msg = {
+      id: Date.now() + Math.random(),
+      userId: body.userId,
+      userName: String(body.userName),
+      text,
+      timestamp: new Date().toISOString()
+    };
+    const data = await readJson('comunicados-globais');
+    const list = Array.isArray(data) ? data : [];
+    list.push(msg);
+    await writeJson('comunicados-globais', list.slice(-COMUNICADOS_GLOBAIS_MAX));
+    res.json({ ok: true, message: msg });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao publicar comunicado global' });
   }
 });
 

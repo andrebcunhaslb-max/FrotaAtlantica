@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Users, Circle, Phone } from 'lucide-react'
+import { Users, Circle, Phone, Copy } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { apiGet } from '../api'
 
@@ -18,7 +18,7 @@ function formatarDuracao(ms) {
 }
 
 export default function FiveMSidebar() {
-  const { usuarios, isLight } = useApp()
+  const { usuarios, isLight, showToast } = useApp()
   const [players, setPlayers] = useState([])
   const [sessionStart, setSessionStart] = useState({})
   const [popover, setPopover] = useState(null)
@@ -91,15 +91,13 @@ export default function FiveMSidebar() {
   }, [usuarios.length, fetchPlayers])
 
   const withNick = usuarios.filter((u) => u.fivem_nick)
-  const onlineCount = withNick.filter((u) => {
+  const onlineMembers = withNick.filter((u) => {
     const nick = stripFivemColors(u.fivem_nick || '').trim().toLowerCase()
     return nick && players.some((n) => n === nick || (nick.length >= 3 && n.includes(nick)))
-  }).length
+  })
+  const onlineCount = onlineMembers.length
 
   const handleBadgeClick = (u, e) => {
-    const nick = stripFivemColors(u.fivem_nick || '').trim().toLowerCase()
-    const online = nick && players.some((n) => n === nick || (nick.length >= 3 && n.includes(nick)))
-    if (!online) return
     const rect = e.currentTarget.getBoundingClientRect()
     setPopover((prev) =>
       prev?.nome === u.nome ? null : { nome: u.nome, telemovel: u.telemovel, x: rect.left, y: rect.top }
@@ -120,6 +118,19 @@ export default function FiveMSidebar() {
     setTooltip((prev) => ({ ...prev, show: false }))
   }
 
+  const handleCopyTelemovel = useCallback(
+    async (telemovel) => {
+      if (!telemovel?.trim()) return
+      try {
+        await navigator.clipboard.writeText(String(telemovel).trim())
+        showToast?.('Número copiado para a área de transferência.', 'success')
+      } catch (_) {
+        showToast?.('Erro ao copiar número.', 'error')
+      }
+    },
+    [showToast]
+  )
+
   const panelContent = (
     <>
       <span className={`text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
@@ -127,42 +138,33 @@ export default function FiveMSidebar() {
         FiveM
       </span>
       <span className={`text-[11px] mb-1 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
-        {onlineCount}/{withNick.length} online
+        {onlineCount} online
       </span>
       <div className="flex flex-col gap-1.5">
-        {withNick.map((u) => {
-          const nick = stripFivemColors(u.fivem_nick || '').trim().toLowerCase()
-          const online =
-            nick && players.some((n) => n === nick || (nick.length >= 3 && n.includes(nick)))
-          return (
-            <button
-              key={u.id ?? u.nome}
-              type="button"
-              onClick={(e) => handleBadgeClick(u, e)}
-              onMouseEnter={(e) => handleBadgeMouseEnter(u, e)}
-              onMouseLeave={handleBadgeMouseLeave}
-              className={`w-full flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs min-h-[44px] ${
-                online
-                  ? isLight
-                    ? 'border-emerald-400/60 bg-emerald-50 text-emerald-600 cursor-pointer'
-                    : 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400 cursor-pointer'
-                  : isLight
-                    ? 'border-slate-200 bg-slate-100/80 text-slate-600'
-                    : 'border-slate-600 bg-slate-800/30 text-slate-500'
-              }`}
-            >
-              <Circle
-                className={`h-1.5 w-1.5 shrink-0 ${online ? (isLight ? 'fill-emerald-500 text-emerald-500' : 'fill-emerald-400 text-emerald-400') : (isLight ? 'fill-slate-500 text-slate-500' : 'fill-slate-500 text-slate-500')}`}
-              />
-              {u.nome}
-            </button>
-          )
-        })}
+        {onlineMembers.map((u) => (
+          <button
+            key={u.id ?? u.nome}
+            type="button"
+            onClick={(e) => handleBadgeClick(u, e)}
+            onMouseEnter={(e) => handleBadgeMouseEnter(u, e)}
+            onMouseLeave={handleBadgeMouseLeave}
+            className={`w-full flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-xs min-h-[44px] ${
+              isLight
+                ? 'border-emerald-400/60 bg-emerald-50 text-emerald-600 cursor-pointer'
+                : 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400 cursor-pointer'
+            }`}
+          >
+            <Circle
+              className={`h-1.5 w-1.5 shrink-0 ${isLight ? 'fill-emerald-500 text-emerald-500' : 'fill-emerald-400 text-emerald-400'}`}
+            />
+            {u.nome}
+          </button>
+        ))}
       </div>
     </>
   )
 
-  if (withNick.length === 0) return null
+  if (onlineMembers.length === 0) return null
 
   return (
     <>
@@ -212,9 +214,22 @@ export default function FiveMSidebar() {
           }}
         >
           <div className="font-semibold mb-1">{popover.nome}</div>
-          <div className={`text-sm flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
-            <Phone className="h-3 w-3" />
-            {popover.telemovel || 'Sem telemóvel'}
+          <div className={`text-sm flex items-center justify-between gap-2 ${isLight ? 'text-slate-600' : 'text-slate-500'}`}>
+            <span className="flex items-center gap-1 min-w-0">
+              <Phone className="h-3 w-3 shrink-0" />
+              {popover.telemovel || 'Sem telemóvel'}
+            </span>
+            {popover.telemovel?.trim() && (
+              <button
+                type="button"
+                onClick={() => handleCopyTelemovel(popover.telemovel)}
+                className={`shrink-0 p-1 rounded-lg transition ${isLight ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-slate-800 text-slate-400'}`}
+                aria-label="Copiar número de telemóvel"
+                title="Copiar número"
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>,
         document.body
